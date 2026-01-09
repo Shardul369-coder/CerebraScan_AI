@@ -1,0 +1,93 @@
+PHASE 1 — Setup DVC with S3 (Admin Machine):
+
+     Step 1 — Initialize DVC
+          dvc init
+
+     Step 2 — Add Data to DVC
+          dvc add raw_data  ....[This creates .dvc files & updates .dvc/cache.]
+
+     Step 3 — Commit Metadata to Git
+          git add .
+          git commit -m "Add data with DVC tracking"
+
+     Step 4 — Create S3 Bucket
+          Go to AWS Console:
+               Services → S3 → Create bucket
+               Example bucket name: brain-tumor-data
+               Choose region (e.g., us-east-1 or ap-south-1)
+               Keep default settings
+
+     Step 5 — Set DVC Remote to S3
+          Configure remote:
+               dvc remote add -d s3remote s3://brain-tumor-data ...[This tells DVC where to store data.]
+
+     Step 6 — Install AWS CLI (Admin Machine)
+          
+     Step 7 — Configure AWS CLI
+          Run: aws configure
+               Fill in:
+                    AWS Access Key ID
+                    AWS Secret Access Key
+                    Region (us-east-1 or ap-south-1)
+
+     Step 8 — IAM Setup for Admin
+          Go to AWS Console:
+               Services → IAM → Users → Create user
+                    User name: dvc-admin
+                    Disable console access
+                    Attach policy: AmazonS3FullAccess
+                    Create user
+                    Generate Access Key & Secret Key
+                    Use these for aws configure
+
+     Step 9 — Push Data to S3
+          Run:
+               dvc push if upload fails due to network, re-run: dvc push
+
+
+PHASE 2 — Setup Team Access via IAM Groups
+     Step 10 — Create IAM Group
+          In AWS Console:
+               IAM → User groups → Create group
+               Group name: dvc-read-only
+               Don’t add users yet
+               Confirm creation
+     
+     Step 11 — Attach Read-Only Policy to Group
+          Open group:
+               Permissions → Add permissions → Attach policies
+               Search: AmazonS3ReadOnlyAccess
+               Check it
+
+PHASE 3 — Add Teammates
+     Step 12 — Create IAM User Per Teammate
+          For each teammate:
+               IAM → Users → Create user
+               User name example: alice, bob
+               Disable console access (only programmatic)
+               Add to group: dvc-read-only
+               Create user
+
+     Step 13 — Generate Access Keys
+          Open user:
+               Security credentials → Access keys → Create access key
+               Select: “Application running outside AWS”
+               Given to Secret Access Key ID, Access Key teammate.
+
+PHASE 4 — Teammate Machine Setup
+     Step 14 — Install AWS CLI
+
+     Step 15 — Run aws configure
+               Access Key ID
+               Secret Access Key
+               Region
+               Output: json
+     
+     Step 16 — Installation of Git & DVC
+               Git for Windows: git-scm.com
+               DVC: pip install dvc[s3]
+
+     Step 17 — Clone Project & Pull Data
+               git clone <repo-url>
+               cd <repo-folder>
+               dvc pull
