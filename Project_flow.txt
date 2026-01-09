@@ -1,5 +1,4 @@
 PHASE 1 — Setup DVC with S3 (Admin Machine):
-
      Step 1 — Initialize DVC
           dvc init
 
@@ -91,3 +90,14 @@ PHASE 4 — Teammate Machine Setup
                git clone <repo-url>
                cd <repo-folder>
                dvc pull
+     
+     Step 18 — Create virtual environment
+               Linux / Mac:
+                    python3 -m venv venv     
+                    source venv/bin/activate
+               Windows:
+                    python -m venv venv
+                    venv\Scripts\activate
+
+     Step 19 — Install requirements:
+               pip install -r requirements.txt
