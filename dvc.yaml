@@ -1,0 +1,10 @@
+stages:
+  preprocess:
+    cmd: python convert_brats_slices.py
+    deps:
+      - convert_brats_slices.py
+      - raw_data
+    outs:
+      - processed_data
+      - logs
+
