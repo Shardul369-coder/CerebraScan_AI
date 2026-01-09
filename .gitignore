@@ -16,3 +16,4 @@ venv_medai/
 # Raw data directory (DVC manages contents)
 raw_data
 raw_data/
+.vscode
