@@ -5,12 +5,12 @@ from pathlib import Path
 import numpy as np
 import nibabel as nib
 import random
-from nltk.stem.porter import PorterStemmer
-from nltk.corpus import stopwords
-import string
-import nltk
-nltk.download('stopwords')
-nltk.download('punkt_tab')
+# import nltk
+# from nltk.stem.porter import PorterStemmer
+# from nltk.corpus import stopwords
+# import string
+# nltk.download('stopwords')
+# nltk.download('punkt_tab')
 
 
 # -------------------------
