@@ -1,4 +1,4 @@
-# 🧠 CerebraScan AI — Reproducible Medical Imaging Pipeline                   (DVC + S3 + Git)
+# 🧠 CerebraScan AI — Reproducible Medical Imaging Pipeline                  
 
 CerebraScan AI is a **reproducible, secure, team-friendly machine learning pipeline** designed for **MRI-based brain tumor preprocessing and segmentation**.
 
