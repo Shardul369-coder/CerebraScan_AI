@@ -1,6 +1,6 @@
 stages:
   preprocess:
-    cmd: python convert_brats_slices.py
+    cmd: python3 convert_brats_slices.py
     deps:
       - convert_brats_slices.py
       - raw_data
