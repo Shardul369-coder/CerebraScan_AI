@@ -172,7 +172,7 @@ Git Remote (GitHub/GitLab)
          git checkout main<br>  
          git pull<br>
          git checkout feature/<branch><br>
-         git merge main     # or git rebase main<br>
+         git merge main or git rebase main<br>
          Repeat Step 22 for pushing and commiting experiments if done on branch
 
 ## PHASE 7 — Admin Review of Teammate Branches
