@@ -12,17 +12,17 @@ import random
 log_dir = 'logs'
 os.makedirs(log_dir, exist_ok=True)
 
-logger = logging.getLogger('data_preprocessing_3d')
+logger = logging.getLogger('data_preprocessing')
 logger.setLevel(logging.DEBUG)
 
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
 
-log_file_path = os.path.join(log_dir, 'data_preprocessing_3d.log')
+log_file_path = os.path.join(log_dir, 'data_preprocessing.log')
 file_handler = logging.FileHandler(log_file_path)
 file_handler.setLevel(logging.DEBUG)
 
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 file_handler.setFormatter(formatter)
 
@@ -30,7 +30,7 @@ logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
 # -------------------------
-# Config
+# MRI Pipeline Config
 # -------------------------
 RAW_DATA_DIR = Path("raw_data")
 OUTPUT_DIR = Path("processed_data")
@@ -39,110 +39,124 @@ TRAIN_COUNT = 600
 VAL_COUNT = 300
 TEST_COUNT = 100
 
-MODALITY_KEYS = {
-    "flair": "flair",
-    "t1": "t1",
-    "t1ce": "t1ce",
-    "t2": "t2"
-}
-MASK_KEYWORD = "seg"
-
+MIN_TUMOR_PIXELS = 10
 NORMALIZE = True
 
+MRI_MODALITY_KEYWORD = "t2f"
+MASK_KEYWORD = "seg"
+
 # -------------------------
-# Utils
+# Utility Functions
 # -------------------------
 def safe_path(p: Path) -> Path:
     resolved = p.resolve()
     if not resolved.exists():
+        logger.error(f"Path does not exist: {resolved}")
         raise FileNotFoundError(f"Path does not exist: {resolved}")
     return resolved
 
-def load_nii(path: Path):
-    img = nib.load(str(path))
-    data = img.get_fdata(dtype=np.float32)
-    return data, img
+def load_nifti(path: Path) -> np.ndarray:
+    try:
+        img = nib.load(str(path))
+        data = img.get_fdata(dtype=np.float32)
+        if data.ndim != 3:
+            logger.error(f"Expected 3D volume, got shape {data.shape} for file {path}")
+            raise ValueError(f"Expected 3D volume, got {data.shape}")
+        return data
+    except Exception as e:
+        logger.exception(f"Failed to load NIfTI file: {path}")
+        raise
 
-def zscore(vol: np.ndarray) -> np.ndarray:
-    mean, std = vol.mean(), vol.std()
-    if std < 1e-8:
+def normalize_volume(vol: np.ndarray) -> np.ndarray:
+    mean, std = np.mean(vol), np.std(vol)
+    if std < 1e-6:
         return np.zeros_like(vol)
     return (vol - mean) / std
 
-def prepare_dirs():
-    subsets = ["Train_data", "Validation_data", "Test_data"]
-    subdirs = ["Images", "Masks"]
-    for subset in subsets:
-        for sub in subdirs:
-            path = OUTPUT_DIR / subset / sub
-            path.mkdir(parents=True, exist_ok=True)
-    logger.info("Output directory structure ready.")
+def get_25d_slice(volume: np.ndarray, idx: int) -> np.ndarray:
+    d = volume.shape[2]
+    if idx <= 0:
+        slices = (volume[:, :, 0], volume[:, :, 0], volume[:, :, 1])
+    elif idx >= d - 1:
+        slices = (volume[:, :, d - 2], volume[:, :, d - 1], volume[:, :, d - 1])
+    else:
+        slices = (volume[:, :, idx - 1], volume[:, :, idx], volume[:, :, idx + 1])
+    return np.stack(slices, axis=-1)
 
-# -------------------------
-# Core Processing
-# -------------------------
-def process_patient(patient_dir: Path, img_out_dir: Path, mask_out_dir: Path):
+def patient_already_processed(patient_id: str, out_img_dir: Path) -> bool:
+    exists = any(out_img_dir.glob(f"{patient_id}_slice_*.npy"))
+    if exists:
+        logger.info(f"[SKIP] Already processed patient {patient_id}")
+    return exists
+
+def process_patient(patient_dir: Path, out_img_dir: Path, out_mask_dir: Path):
+    nii_files = [p for p in patient_dir.iterdir() if ".nii" in p.name.lower()]
+
+    def find_file(keyword: str) -> Path:
+        matches = [p for p in nii_files if keyword in p.name.lower()]
+        if len(matches) != 1:
+            logger.error(
+                f"Expected 1 file for keyword '{keyword}', found {len(matches)} in {patient_dir}"
+            )
+            raise RuntimeError(
+                f"Expected 1 file for '{keyword}', found {len(matches)}"
+            )
+        return safe_path(matches[0])
+
+    mri_path = find_file(MRI_MODALITY_KEYWORD)
+    mask_path = find_file(MASK_KEYWORD)
+
+    volume = load_nifti(mri_path)
+    mask = load_nifti(mask_path)
+
+    if NORMALIZE:
+        volume = normalize_volume(volume)
 
     pid = patient_dir.name
-    img_out_path = img_out_dir / f"{pid}.npz"
-    mask_out_path = mask_out_dir / f"{pid}_seg.npz"
+    depth = volume.shape[2]
 
-    # ---- SKIP IF ALREADY DONE ----
-    if img_out_path.exists() and mask_out_path.exists():
-        logger.info(f"[SKIP] {pid} already processed.")
-        return
+    saved_slices = 0
+    for idx in range(depth):
+        mask_slice = mask[:, :, idx]
+        if np.count_nonzero(mask_slice) < MIN_TUMOR_PIXELS:
+            continue
 
-    nii_files = list(patient_dir.glob("*.nii.gz"))
+        x = get_25d_slice(volume, idx)
+        y = mask_slice.astype(np.uint8)
 
-    def find_file(key: str) -> Path:
-        for f in nii_files:
-            if key in f.name.lower():
-                return safe_path(f)
-        raise RuntimeError(f"Missing modality '{key}' in {patient_dir}")
+        np.save(out_img_dir / f"{pid}_slice_{idx:03d}.npy", x)
+        np.save(out_mask_dir / f"{pid}_slice_{idx:03d}.npy", y)
+        saved_slices += 1
 
-    # Load modalities
-    vols = []
-    affine = None
-    header = None
+    logger.info(f"Processed patient {pid}: saved {saved_slices} slices")
 
-    for k, v in MODALITY_KEYS.items():
-        p = find_file(v)
-        vol, img = load_nii(p)
-        if NORMALIZE:
-            vol = zscore(vol)
-        vols.append(vol)
-        affine = img.affine
-        header = img.header
+def prepare_dirs():
+    dirs = {
+        "train": OUTPUT_DIR / "Train_data",
+        "val": OUTPUT_DIR / "Validation_data",
+        "test": OUTPUT_DIR / "Test_data",
+    }
 
-    # Stack (H, W, D, 4)
-    volume = np.stack(vols, axis=-1)
+    for subset, base in dirs.items():
+        for sub in ["Images", "Masks"]:
+            path = base / sub
+            path.mkdir(parents=True, exist_ok=True)
 
-    # Load mask
-    mask_path = find_file(MASK_KEYWORD)
-    mask, _ = load_nii(mask_path)
-    mask = mask.astype(np.uint8)
-
-    # Save outputs
-    np.savez_compressed(img_out_path,
-                        volume=volume,
-                        affine=affine,
-                        header=np.array(header.structarr, dtype=object))
-
-    np.savez_compressed(mask_out_path,
-                        mask=mask)
-
-    logger.info(f"[OK] Processed {pid}")
+    logger.debug("Output directories prepared successfully.")
+    return dirs
 
 # -------------------------
-# MAIN
+# MAIN PIPELINE
 # -------------------------
 def main():
     raw_dir = safe_path(RAW_DATA_DIR)
+
     patient_dirs = sorted(d for d in raw_dir.iterdir() if d.is_dir())
     total = len(patient_dirs)
-    logger.info(f"Found {total} patients in raw_data")
+    logger.info(f"Found {total} patients in raw directory.")
 
     if total < (TRAIN_COUNT + VAL_COUNT + TEST_COUNT):
+        logger.error("Not enough patients to create train/val/test splits!")
         raise RuntimeError("Not enough patients to split!")
 
     random.shuffle(patient_dirs)
@@ -151,27 +165,33 @@ def main():
     val_patients = patient_dirs[TRAIN_COUNT:TRAIN_COUNT + VAL_COUNT]
     test_patients = patient_dirs[TRAIN_COUNT + VAL_COUNT:TRAIN_COUNT + VAL_COUNT + TEST_COUNT]
 
-    prepare_dirs()
+    dirs = prepare_dirs()
 
-    config = [
-        ("Train_data", train_patients),
-        ("Validation_data", val_patients),
-        ("Test_data", test_patients),
+    subsets = [
+        ("train", train_patients),
+        ("val", val_patients),
+        ("test", test_patients),
     ]
 
-    for subset_name, patients in config:
-        img_dir = OUTPUT_DIR / subset_name / "Images"
-        mask_dir = OUTPUT_DIR / subset_name / "Masks"
+    for subset_name, subset_patients in subsets:
+        img_dir = dirs[subset_name] / "Images"
+        mask_dir = dirs[subset_name] / "Masks"
 
-        logger.info(f"Processing {subset_name} ({len(patients)} patients)")
-        for p in patients:
-            process_patient(p, img_dir, mask_dir)
+        logger.info(f"Processing {subset_name.upper()} set ({len(subset_patients)} patients)")
 
-    logger.info("SUCCESS: All data processed for 3D U-Net.")
+        for patient in subset_patients:
+            pid = patient.name
+            if patient_already_processed(pid, img_dir):
+                continue
+
+            logger.info(f"Processing patient: {pid}")
+            process_patient(patient, img_dir, mask_dir)
+
+    logger.info("SUCCESS: All splits processed safely.")
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        logger.exception(f"FATAL ERROR: {e}")
+    except Exception as exc:
+        logger.exception(f"FATAL ERROR: {exc}")
         sys.exit(1)
