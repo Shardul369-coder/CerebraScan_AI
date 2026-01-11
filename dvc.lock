@@ -1,0 +1,25 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python src/convert_brats_slices.py
+    deps:
+    - path: raw_data
+      hash: md5
+      md5: c5c4bf5c732fa4e6e758c7969718ac52.dir
+      size: 13389537553
+      nfiles: 6255
+    - path: src/convert_brats_slices.py
+      hash: md5
+      md5: e312a1206363d161c037e977d6513022
+      size: 6190
+    outs:
+    - path: logs
+      hash: md5
+      md5: 03c20f5c81a0803bda3a0b0c6c75cbc3.dir
+      size: 203556
+      nfiles: 1
+    - path: processed_data
+      hash: md5
+      md5: fc2bdfe87ba157a03b52797a87c97970.dir
+      size: 48077410304
+      nfiles: 128368
