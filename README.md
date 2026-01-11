@@ -1,6 +1,8 @@
-# 🧠 CerebraScan AI — Reproducible Medical Imaging Pipeline                  
+# 🧠 CerebraScan AI
+### Reproducible Medical Imaging Pipeline
 
-## **🚧 Status: In Active Development (Not Production Ready Yet)**
+🚧 Status: In Active Development (Not Production Ready Yet)
+
 
 CerebraScan_AI is an end-to-end, production-oriented medical imaging platform designed for MRI-based brain tumor analysis, with a focus on clinical reproducibility, collaboration, and deployment.
 The project integrates DVC for dataset versioning, MLflow for experiment tracking, modular model training pipelines, and full-stack components for visualization, reporting, and deployment — enabling research teams, radiologists, and engineers to build and scale real-world neuroimaging applications.
