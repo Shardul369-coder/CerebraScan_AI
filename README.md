@@ -1,6 +1,22 @@
-# 🧠 CerebraScan AI — Reproducible Medical Imaging Pipeline                  
+# 🧠 CerebraScan AI
 
-CerebraScan AI is a **reproducible, secure, team-friendly machine learning pipeline** designed for **MRI-based brain tumor preprocessing and segmentation**.
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![DVC](https://img.shields.io/badge/DVC-2.0+-orange)
+![MLflow](https://img.shields.io/badge/MLflow-Tracking-yellow)
+![AWS S3](https://img.shields.io/badge/AWS-S3-ff9900)
+![Docker](https://img.shields.io/badge/Docker-Containerized-blue)
+
+### Reproducible Medical Imaging Pipeline
+
+🚧 Status: In Active Development (Not Production Ready Yet)
+
+
+CerebraScan_AI is an end-to-end, production-oriented medical imaging platform designed for MRI-based brain tumor analysis, with a focus on clinical reproducibility, collaboration, and deployment.
+The project integrates DVC for dataset versioning, MLflow for experiment tracking, modular model training pipelines, and full-stack components for visualization, reporting, and deployment — enabling research teams, radiologists, and engineers to build and scale real-world neuroimaging applications.
+
+Beyond core segmentation and classification, CerebraScan_AI includes advanced clinical features such as multi-modal MRI fusion, longitudinal tumor tracking, DICOM-structured reporting, explainable AI outputs, and a real-time collaborative viewer, making it suitable for hospital workflows, tumor boards, and radiology research environments.
+
+Planned capabilities include frontend & backend services, containerized deployment (Docker), CI/CD automation, and cloud/on-prem deployment support, transforming this project from a traditional ML notebook into a production-grade medical imaging system.
 
 It features:
 
@@ -172,7 +188,7 @@ Git Remote (GitHub/GitLab)
          git checkout main<br>  
          git pull<br>
          git checkout feature/<branch><br>
-         git merge main     # or git rebase main<br>
+         git merge main or git rebase main<br>
          Repeat Step 22 for pushing and commiting experiments if done on branch
 
 ## PHASE 7 — Admin Review of Teammate Branches
