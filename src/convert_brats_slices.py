@@ -40,10 +40,10 @@ VAL_COUNT = 300
 TEST_COUNT = 100
 
 MIN_TUMOR_PIXELS = 10
-NORMALIZE = True
+NORMALIZE = True   # enable/disable z-score
 
-MRI_MODALITY_KEYWORD = "t2f"
-MASK_KEYWORD = "seg"
+MRI_MODALITY_KEYWORD = "t2f"   # Image modality keyword
+MASK_KEYWORD = "seg"           # Mask keyword
 
 # -------------------------
 # Utility Functions
@@ -67,11 +67,12 @@ def load_nifti(path: Path) -> np.ndarray:
         logger.exception(f"Failed to load NIfTI file: {path}")
         raise
 
-def normalize_volume(vol: np.ndarray) -> np.ndarray:
-    mean, std = np.mean(vol), np.std(vol)
-    if std < 1e-6:
+def zscore_normalize(vol: np.ndarray) -> np.ndarray:
+    mean = vol.mean()
+    std = vol.std()
+    if std < 1e-6:  # avoid div by zero
         return np.zeros_like(vol)
-    return (vol - mean) / std
+    return (vol - mean) / (std + 1e-8)
 
 def get_25d_slice(volume: np.ndarray, idx: int) -> np.ndarray:
     d = volume.shape[2]
@@ -89,28 +90,29 @@ def patient_already_processed(patient_id: str, out_img_dir: Path) -> bool:
         logger.info(f"[SKIP] Already processed patient {patient_id}")
     return exists
 
+# -------------------------
+# Core Processing
+# -------------------------
 def process_patient(patient_dir: Path, out_img_dir: Path, out_mask_dir: Path):
     nii_files = [p for p in patient_dir.iterdir() if ".nii" in p.name.lower()]
 
     def find_file(keyword: str) -> Path:
         matches = [p for p in nii_files if keyword in p.name.lower()]
         if len(matches) != 1:
-            logger.error(
-                f"Expected 1 file for keyword '{keyword}', found {len(matches)} in {patient_dir}"
-            )
-            raise RuntimeError(
-                f"Expected 1 file for '{keyword}', found {len(matches)}"
-            )
+            logger.error(f"Expected 1 file for keyword '{keyword}', found {len(matches)} in {patient_dir}")
+            raise RuntimeError(f"Expected 1 file for '{keyword}', found {len(matches)}")
         return safe_path(matches[0])
 
+    # Load 3D volumes
     mri_path = find_file(MRI_MODALITY_KEYWORD)
     mask_path = find_file(MASK_KEYWORD)
 
-    volume = load_nifti(mri_path)
-    mask = load_nifti(mask_path)
+    volume = load_nifti(mri_path)  # float32
+    mask = load_nifti(mask_path)   # int labels
 
+    # ---- APPLY Z-SCORE NORMALIZATION TO IMAGES ONLY ----
     if NORMALIZE:
-        volume = normalize_volume(volume)
+        volume = zscore_normalize(volume)
 
     pid = patient_dir.name
     depth = volume.shape[2]
@@ -118,11 +120,13 @@ def process_patient(patient_dir: Path, out_img_dir: Path, out_mask_dir: Path):
     saved_slices = 0
     for idx in range(depth):
         mask_slice = mask[:, :, idx]
+
+        # skip slices without tumor
         if np.count_nonzero(mask_slice) < MIN_TUMOR_PIXELS:
             continue
 
         x = get_25d_slice(volume, idx)
-        y = mask_slice.astype(np.uint8)
+        y = mask_slice.astype(np.uint8)  # keep as integer labels
 
         np.save(out_img_dir / f"{pid}_slice_{idx:03d}.npy", x)
         np.save(out_mask_dir / f"{pid}_slice_{idx:03d}.npy", y)
@@ -130,6 +134,9 @@ def process_patient(patient_dir: Path, out_img_dir: Path, out_mask_dir: Path):
 
     logger.info(f"Processed patient {pid}: saved {saved_slices} slices")
 
+# -------------------------
+# Directory Prep
+# -------------------------
 def prepare_dirs():
     dirs = {
         "train": OUTPUT_DIR / "Train_data",
@@ -150,7 +157,6 @@ def prepare_dirs():
 # -------------------------
 def main():
     raw_dir = safe_path(RAW_DATA_DIR)
-
     patient_dirs = sorted(d for d in raw_dir.iterdir() if d.is_dir())
     total = len(patient_dirs)
     logger.info(f"Found {total} patients in raw directory.")
