@@ -1,4 +1,11 @@
 # 🧠 CerebraScan AI
+
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![DVC](https://img.shields.io/badge/DVC-2.0+-orange)
+![MLflow](https://img.shields.io/badge/MLflow-Tracking-yellow)
+![AWS S3](https://img.shields.io/badge/AWS-S3-ff9900)
+![Docker](https://img.shields.io/badge/Docker-Containerized-blue)
+
 ### Reproducible Medical Imaging Pipeline
 
 🚧 Status: In Active Development (Not Production Ready Yet)
