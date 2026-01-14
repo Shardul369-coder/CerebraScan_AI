@@ -1,4 +1,4 @@
-# 🧠 CerebraScan AI
+# 🧠 CerebraScan AI <br>
 
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![DVC](https://img.shields.io/badge/DVC-2.0+-orange)
@@ -6,30 +6,145 @@
 ![AWS S3](https://img.shields.io/badge/AWS-S3-ff9900)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-blue)
 
-### Reproducible Medical Imaging Pipeline
+### Reproducible Neuro-Imaging & Clinical Pipeline <br>
 
 🚧 Status: In Active Development (Not Production Ready Yet)
 
+---
 
-CerebraScan_AI is an end-to-end, production-oriented medical imaging platform designed for MRI-based brain tumor analysis, with a focus on clinical reproducibility, collaboration, and deployment.
-The project integrates DVC for dataset versioning, MLflow for experiment tracking, modular model training pipelines, and full-stack components for visualization, reporting, and deployment — enabling research teams, radiologists, and engineers to build and scale real-world neuroimaging applications.
+## 🧾 Overview <br>
 
-Beyond core segmentation and classification, CerebraScan_AI includes advanced clinical features such as multi-modal MRI fusion, longitudinal tumor tracking, DICOM-structured reporting, explainable AI outputs, and a real-time collaborative viewer, making it suitable for hospital workflows, tumor boards, and radiology research environments.
+CerebraScan AI is an end-to-end multimodal MRI analysis system for **brain tumor segmentation**, **volumetric analysis**, **radiogenomic inference**, and **automated clinical reporting**, while integrating production-grade **MLOps**, **data versioning**, and **deployment tooling**.<br><br>
 
-Planned capabilities include frontend & backend services, containerized deployment (Docker), CI/CD automation, and cloud/on-prem deployment support, transforming this project from a traditional ML notebook into a production-grade medical imaging system.
+It combines:<br>
+• **Deep Learning (U-Net & nnU-Net)**<br>
+• **Radiogenomics**<br>
+• **3D Visualization**<br>
+• **Longitudinal Tracking**<br>
+• **LLM-based Reporting**<br>
+• **DVC + S3 Data Management**<br>
+• **MLflow Experiment Tracking**<br>
+• **Dockerized Deployment**<br><br>
 
-It features:
-
-- **DVC** for data versioning & pipelines
-- **AWS S3** for remote dataset storage
-- **IAM** for secure access control
-- **Git branching** for collaborative experiments
-- **GPU teammates** for model training
-- **Admin-only push rights** for protected medical data
+to support neuro-oncology research and clinical workflows.
 
 ---
 
-## 🧱 System Architecture
+## 🎯 Clinical Approach & Research Objectives <br>
+
+This system targets real-world neuro-oncology use-cases through the following objectives:<br><br>
+
+1. **Volumetric 3D Tumor & Edema Analysis** using normalized T1, T1CE, T2, and FLAIR modalities.<br>
+2. **Color-Coded Sub-Region Annotation** for edema, NET, ET, and background.<br>
+3. **Intracranial Tumor Classification** (Glioma, Meningioma, Pituitary, Schwannomas, Medulloblastoma, Ependymoma).<br>
+4. **2D→3D Fly-Through Visualization** with grayscale or RGB rendering.<br>
+5. **Longitudinal Delta Tracking** for growth/shrinkage velocity and treatment response.<br>
+6. **Surgical No-Go Zone Identification** to analyze anatomical adjacency & risk.<br>
+7. **Biopsy Site Recommendation** via hotspot-based heatmaps for high-grade tissue sampling.<br>
+8. **Radiogenomic Virtual Biopsy** predicting **IDH mutation** & **MGMT methylation**.<br>
+9. **Automated LLM-Based Reporting** that consolidates all patient findings into structured radiology-style documentation.<br>
+
+---
+
+## 🧱 System Implementation <br>
+
+### **1. Segmentation Backbone** <br>
+
+Supported models:<br>
+• **U-Net (TensorFlow/Keras)** — baseline 2D/3D segmentation<br>
+• **nnU-Net (PyTorch)** — auto-configured SOTA clinical segmentation<br><br>
+
+nnU-Net is used as the default segmentation engine due to its automated preprocessing, architecture tuning, and training pipeline.<br><br>
+
+### **2. Classification** <br>
+
+Post-segmentation, extracted radiomics + intensities can be used for:<br>
+• Tumor type classification<br>
+• Low-grade vs high-grade prediction<br><br>
+
+### **3. Radiogenomics** <br>
+
+Using **TCGA-GBM**, the system aims to non-invasively predict:<br>
+• **IDH mutation status**<br>
+• **MGMT promoter methylation**<br><br>
+
+### **4. Volumetric Analysis** <br>
+
+3D reconstruction enables:<br>
+• ET / NET / Edema volume extraction<br>
+• Ratio & spread metrics<br>
+• Treatment response quantification<br><br>
+
+### **5. Visualization** <br>
+
+Supports:<br>
+• 2D slice overlays<br>
+• 3D surface rendering<br>
+• RGB segmentation overlays<br>
+• Fly-through mode<br><br>
+
+### **6. Delta Tracking** <br>
+
+For multi-session scans of the same patient, the system computes:<br>
+• Tumor growth rate<br>
+• Edema evolution<br>
+• Volumetric velocity maps<br>
+• Clinical progression markers<br><br>
+
+---
+
+## 🌟 Feature Summary <br>
+
+• Multimodal MRI segmentation<br>
+• Clinical 3D volumetric mapping<br>
+• Sub-region color coding<br>
+• Tumor-type classification<br>
+• Radiogenomic virtual biopsy<br>
+• Biopsy hotspot recommendation<br>
+• Surgical risk/no-go analysis<br>
+• Longitudinal progression tracking<br>
+• DICOM/NIfTI pipeline<br>
+• MLOps-ready architecture<br>
+• Automated structured reporting<br>
+
+---
+
+## 📂 Dataset & Modalities <br>
+
+**BraTS 2023**<br>
+• **Task:** Tumor sub-region segmentation<br>
+• **Modalities:** T1, T1CE, T2, FLAIR<br>
+• **Labels:** Edema, NET, ET<br><br>
+
+**TCGA-GBM**<br>
+• **Task:** Radiogenomics + classification<br>
+• **Labels:** IDH, MGMT, survival metadata<br>
+
+---
+
+## 🤖 Current Model Support <br>
+
+• **U-Net (Keras/TensorFlow)**<br>
+• **nnU-Net (PyTorch)**<br>
+
+---
+
+# 🧰 Production & MLOps Layer (DVC + S3 + MLflow) <br>
+
+CerebraScan AI includes a **production-grade data & experiment workflow** using:<br><br>
+
+• **DVC** for dataset versioning<br>
+• **AWS S3** for remote storage<br>
+• **MLflow** for tracking experiments & metrics<br>
+• **Docker** for deployment<br>
+• **Git branching** for parallel experimentation<br><br>
+
+This transforms the project from a notebook-based ML experiment into a **scalable MLOps pipeline** for research labs & hospitals.<br>
+
+---
+
+## 🧱 System Architecture <br>
+
 Admin (CPU)<br>
 │<br>
 │ dvc push (write)<br>
@@ -38,189 +153,38 @@ AWS S3 Bucket<br>
 ▲<br>
 │ dvc pull (read)<br>
 │<br>
-Team GPU Machines<br>
+GPU Machines (Training/Inference)<br>
 │<br>
-└── git push (feature branches)<br>
+└── git push (experiment branches)<br>
 ▼<br>
-Git Remote (GitHub/GitLab)
-
-
+Git Remote (GitHub/GitLab)<br>
 
 ---
 
-## 🔒 Access Control Model
-
-| Role | DVC Push | DVC Pull | S3 Write | S3 Read | Git Push |
-|---|---|---|---|---|---|
-| Admin | ✔ | ✔ | ✔ | ✔ | ✔ |
-| Teammate | ❌ | ✔ | ❌ | ✔ | ✔ |
-
----
-
-## 📦 Tech Stack
+## 📦 Tech Stack <br>
 
 | Component | Tool |
 |---|---|
 | Data Versioning | DVC |
-| Remote Storage | AWS S3 |
+| Remote Storage | S3 |
+| Experiment Tracking | MLflow |
 | Access Control | IAM |
-| Version Control | Git |
-| Pipelines | dvc.yaml |
-| Hyperparameters | params.yaml |
-| Training Hardware | GPU Machines |
-| Medical Formats | NIfTI (.nii) |
+| Model Training | GPU Machines |
+| Formats | NIfTI / DICOM |
+| Deployment | Docker |
 
 ---
 
-# 📖 Setup & Workflow Guide
+## 🔐 Security Model <br>
 
-## PHASE 1 — Admin Machine Setup (DVC + S3)
+• S3 stores sensitive dataset artifacts<br>
+• DVC manages version references<br>
+• Git stores only metadata & code<br>
+• IAM restricts write-access to admin<br>
+• If used in a team, teammates have read-only S3 access<br>
 
-**Step 1 — Initialize DVC:**<br>
-      dvc init
+---
 
-**Step 2 — Add Raw Data**<br>
-      dvc add raw_data
+## 👤 Maintainer <br>
 
-**Step 3 — Commit to Git**<br>
-      git add .<br>
-      git commit -m "Add raw data tracked by DVC"
-
-**Step 4 — Create S3 Bucket**<br>
-      AWS Console → S3 → Create bucket<br>
-      Example: brain-tumor-data<br>
-      Region: ap-south-1 (recommended)
-
-**Step 5 — Set DVC Remote**<br>
-      dvc remote add -d s3remote s3://brain-tumor-data
-
-
-**Step 6 — Install AWS CLI**
-
-**Step 7 — Configure AWS CLI**<br>
-      aws configure<br>
-          Enter:<br>
-            Access Key ID<br>
-            Secret Key<br>
-            Region (e.g., ap-south-1)<br>
-            Output: json
-            
-**Step 8 — IAM Setup for Admin**<br>
-      IAM → Users → Create user → dvc-admin<br>
-      Attach policy: AmazonS3FullAccess
-
-**Step 9 — Push Data to S3**<br>
-      dvc push<br>
-      If upload interrupted run again: dvc push<br>
-
-## PHASE 2 — IAM Group Setup for Teammates
-
-**Step 10 — Create IAM Group**<br>
-      IAM → User groups → Create → dvc-read-only
-
-**Step 11 — Attach S3 Read-Only Policy**<br>
-      Attach:<br>
-          AmazonS3ReadOnlyAccess
-
-## PHASE 3 — Add Teammates
-
-**Step 12 — Create IAM Users**<br>
-      Example usernames:<br>
-          alice, bob, carol<br>
-      Disable console login, allow programmatic only.<br>
-          Add to group: dvc-read-only
-
-**Step 13 — Generate Access Keys**<br>
-      IAM → User → Security credentials → Access keys → Create access key<br>
-          Select:<br>
-          Application running outside AWS<br>
-          Provide each teammate:<br>
-                Access Key ID<br>
-                Secret Access Key<br>
-                Region
-
-## PHASE 4 — Teammate Setup (GPU Machines)
-
-**Step 14 — Create Virtual Environment**<br>
-       Linux/Mac:<br>
-          python3 -m venv venv<br>
-          source venv/bin/activate<br>
-       Windows:<br>
-          python -m venv venv<br>  
-          venv\Scripts\activate
-
-**Step 15 — Install Requirements**<br>
-        pip install -r requirements.txt
-
-
-**Step 16 — Install AWS CLI**
-
-**Step 17 — Configure AWS**<br>
-        aws configure
-
-**Step 18 — Install Git & DVC**<br>
-        pip install dvc[s3]
-
-**Step 19 — Clone Repo & Pull Data**<br>
-        git clone <repo-url><br>
-        cd <repo-folder><br>  
-        dvc pull
-
-## PHASE 5 — Experiment Branching (GPU Teammates)
-
-**Step 20 — Create Feature Branch**<br>
-        git checkout -b feature/<name-or-experiment><br>
-        Examples:<br>
-          git checkout -b feature/john-unet-v2<br>
-          git checkout -b feature/sara-lr-3e-4
-
-
-**Step 21 — Train on GPU Machine**
-
-**Step 22 — Commit + Push Experiment**<br>
-         git add .<br>
-         git commit -m "Experiment: lr=3e-4"<br>
-         git push -u origin feature/john-lr-3e-4
-
-## PHASE 6 — Sync Main Updates to Feature Branches
-
-**Step 23 — If Admin updates main, teammates run:**<br>
-         git checkout main<br>  
-         git pull<br>
-         git checkout feature/<branch><br>
-         git merge main or git rebase main<br>
-         Repeat Step 22 for pushing and commiting experiments if done on branch
-
-## PHASE 7 — Admin Review of Teammate Branches
-
-**Step 24 — Fetch All Branches**<br>
-         git fetch --all
-
-**Step 25 — List Branches**<br>
-         git branch -a
-
-
-**Step 26 — Checkout a Teammate Branch**<br>
-         git checkout feature/<name-or-experimet><br>
-         Admin can now review code & validate updates.
-
-
-
-## 🧩 Project Philosophy
-**This project emphasizes:** <br>
-**reproducibility**<br>
-**data integrity**<br>
-**secure access control**<br>
-**collaboration via branches**<br>
-**separation of CPU vs GPU roles**<br>
-**centralized pipeline management**<br>
-**This matches real-world workflows used in research labs & medical imaging organizations**<br>
-
-
-
-## 🔐 Security Summary
-**Dataset stored in S3**<br>
-**Teammates have read-only access**<br>
-**Only Admin runs dvc push**<br>
-**Data never travels through Git**<br>
-**S3 IAM prevents accidental deletion**<br>
+This project is maintained by **Shardul Salodkar**.<br>
