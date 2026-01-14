@@ -39,7 +39,7 @@ This system targets real-world neuro-oncology use-cases through the following ob
 3. **Intracranial Tumor Classification** (Glioma, Meningioma, Pituitary, Schwannomas, Medulloblastoma, Ependymoma).<br>
 4. **2D→3D Fly-Through Visualization** with grayscale or RGB rendering.<br>
 5. **Longitudinal Delta Tracking** for growth/shrinkage velocity and treatment response.<br>
-6. **Surgical No-Go Zone Identification** to analyze anatomical adjacency and risk.<br>
+6. **Surgical No-Go Zone Identification** to analyze anatomical adjacency & risk.<br>
 7. **Biopsy Site Recommendation** via hotspot-based heatmaps for high-grade tissue sampling.<br>
 8. **Radiogenomic Virtual Biopsy** predicting **IDH mutation** & **MGMT methylation**.<br>
 9. **Automated LLM-Based Reporting** that consolidates all patient findings into structured radiology-style documentation.<br>

@@ -10,16 +10,16 @@ stages:
       nfiles: 6255
     - path: src/convert_brats_slices.py
       hash: md5
-      md5: 21736c2ddb676f1985a2b2e00dd6352f
-      size: 6371
+      md5: 24562ce84dde032c9038ab329221d512
+      size: 6574
     outs:
     - path: logs
       hash: md5
-      md5: fb327801bd2238d7e2a2fd4bbdcd2502.dir
-      size: 203556
+      md5: ecdbd2658f6b3ca300dc9d74228f02b4.dir
+      size: 205560
       nfiles: 1
     - path: processed_data
       hash: md5
-      md5: 3517a7e07d8576a843ed4d36dfd2ded4.dir
-      size: 47801008640
-      nfiles: 127630
+      md5: e78f94b68c3c58498d4f4c6d543e7229.dir
+      size: 47921606656
+      nfiles: 127952
