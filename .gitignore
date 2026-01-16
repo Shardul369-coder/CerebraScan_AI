@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+venv_medai/
+
+# DVC cache (never commit)
+.dvc/cache/
+
+# # Locally generated processed data
+# processed/
+# processed_data/
+
+# Raw data directory (DVC manages contents)
+raw_data
+raw_data/
+.vscode
+
+Project_flow.txt
+
+/processed_data
+/logs
+

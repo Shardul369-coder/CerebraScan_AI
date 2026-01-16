@@ -1,0 +1,13 @@
+stages:
+  train:
+    cmd: python src/Model_seg.py
+    deps:
+      - src/Model_seg.py
+      - src/data.py
+      - src/losses.py
+      - processed_data/
+      - params.yaml
+    params:
+      - model_seg
+    outs:
+      - checkpoints/seg_best.h5

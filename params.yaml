@@ -1,0 +1,7 @@
+model_seg:
+  IMG_SIZE: [240, 240]      # matches image H,W from preprocessing
+  INPUT_CHANNELS: 4         # modalities: flair, t1, t1ce, t2
+  NUM_CLASSES: 4            # segmentation labels
+  LEARNING_RATE: 0.0001     # Adam LR
+  EPOCHS: 50                # number of training epochs
+  BATCH_SIZE: 4             # must match dataset loader batch size
