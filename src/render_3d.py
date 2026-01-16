@@ -28,3 +28,4 @@ def render_surface(volume_3d):
 if __name__ == "__main__":
     vol = np.load("predictions_3d/patient_001_3d.npy")
     render_surface(vol)
+
