@@ -11,3 +11,20 @@ stages:
       - model_seg
     outs:
       - checkpoints/seg_best.h5
+
+  inference:
+    cmd: python src/predict_and_stack.py
+    deps:
+      - src/predict_and_stack.py
+      - checkpoints/seg_best.h5
+      - processed_data/Test_data/Images/
+    outs:
+      - predictions_3d/
+
+  export_nifti:
+    cmd: python src/export_nifti.py
+    deps:
+      - src/export_nifti.py
+      - predictions_3d/
+    outs:
+      - nifti_outputs/
