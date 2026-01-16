@@ -4,7 +4,7 @@ import yaml
 from src.data import get_dataset
 import tensorflow 
 from tensorflow import keras
-from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Concatenate, Input
+from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Concatenate, Input, Flatten, Dense
 from keras.models import Model
 from keras.optimizers import Adam
 from src.losses import hybrid_loss, dice_coef_multiclass
@@ -85,13 +85,19 @@ def unet2d(input_shape, num_classes):
 
     return Model(inputs, outputs)
 
-def train_segmentation(train_ds, val_ds, params):
+def train_segmentation(train, val, params):
+    train_ds, train_steps = train
+    val_ds, val_steps = val
 
     try:
-        input_shape = (params['IMG_SIZE'][0],params['IMG_SIZE'][1],params['INPUT_CHANNELS'])
+        input_shape = (params['IMG_SIZE'][0], params['IMG_SIZE'][1], params['INPUT_CHANNELS'])
         model = unet2d(input_shape=input_shape, num_classes=params['NUM_CLASSES'])
         model.summary(print_fn=lambda x: logger.debug(x))
-        model.compile(optimizer = Adam(learning_rate=params['LEARNING_RATE']),loss=hybrid_loss,metrics=[dice_coef_multiclass])
+        model.compile(
+            optimizer=Adam(learning_rate=params['LEARNING_RATE']),
+            loss=hybrid_loss,
+            metrics=[dice_coef_multiclass]
+        )
 
         train_ds = train_ds.prefetch(tensorflow.data.AUTOTUNE)
         val_ds = val_ds.prefetch(tensorflow.data.AUTOTUNE)
@@ -99,18 +105,31 @@ def train_segmentation(train_ds, val_ds, params):
         os.makedirs("checkpoints", exist_ok=True)
 
         cb = [
-            keras.callbacks.ModelCheckpoint(filepath="checkpoints/seg_best.h5",save_best_only=True,monitor="val_dice_coef_multiclass",mode="max"),
-            keras.callbacks.ReduceLROnPlateau(monitor="val_loss",patience=3),
-            keras.callbacks.EarlyStopping(monitor="val_dice_coef_multiclass",mode="max",patience=7,restore_best_weights=True)
-             ]
+            keras.callbacks.ModelCheckpoint(
+                filepath="checkpoints/seg_best.h5",
+                save_best_only=True,
+                monitor="val_dice_coef_multiclass",
+                mode="max"
+            ),
+            keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3),
+            keras.callbacks.EarlyStopping(monitor="val_dice_coef_multiclass", mode="max", patience=7, restore_best_weights=True)
+        ]
 
         logger.debug('Model training started')
         logger.debug(f"Training for {params['EPOCHS']} epochs...")
-        model.fit(train_ds,validation_data=val_ds,epochs=params['EPOCHS'],callbacks=cb)
-        logger.debug('Model training completed')
-    
-        return model
 
+        model.fit(
+            train_ds,
+            validation_data=val_ds,
+            steps_per_epoch=train_steps,
+            validation_steps=val_steps,
+            epochs=params['EPOCHS'],
+            callbacks=cb
+        )
+
+        logger.debug('Model training completed')
+        return model
+    
     except ValueError as e:
         logger.error(f"ValueError during model training: {e}")
         raise
@@ -128,4 +147,8 @@ def save_model(model, model_path):
         raise
 
 if __name__ == "__main__":
-    train_segmentation(get_dataset("Train"), get_dataset("Val"), load_params("params.yaml")['model_seg'])
+    train_segmentation(
+        get_dataset("Train"),
+        get_dataset("Val"),
+        load_params("params.yaml")['model_seg']
+    )
