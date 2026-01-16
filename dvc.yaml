@@ -1,6 +1,6 @@
 stages:
   train:
-    cmd: python src/Model_seg.py
+    cmd: PYTHONPATH=. python src/Model_seg.py
     deps:
       - src/Model_seg.py
       - src/data.py
@@ -12,12 +12,23 @@ stages:
     outs:
       - checkpoints/seg_best.h5
 
+  evaluate:
+    cmd: PYTHONPATH=. python src/model_evaluation.py
+    deps:
+      - src/model_evaluation.py
+      - src/data.py
+      - src/losses.py
+      - checkpoints/seg_best.h5
+      - processed_data/
+    outs:
+      - test_metrics.json
+
   inference:
-    cmd: python src/predict_and_stack.py
+    cmd: PYTHONPATH=. python src/predict_and_stack.py
     deps:
       - src/predict_and_stack.py
       - checkpoints/seg_best.h5
-      - processed_data/Test_data/Images/
+      - processed_data/Test_data/
     outs:
       - predictions_3d/
 
