@@ -26,7 +26,7 @@ def compute_iou(y_true, y_pred, num_classes):
 
 def evaluate_model(model_path="checkpoints/seg_best.h5", output_path="test_metrics.json"):
     # Load model (compile=False to avoid missing custom objects)
-    model = load_model(model_path, compile=False)
+    model = load_model(model_path, compile=False, custom_objects={"dice_coef_multiclass": dice_coef_multiclass})
 
     # Load test dataset
     test_ds = get_dataset("Test")
