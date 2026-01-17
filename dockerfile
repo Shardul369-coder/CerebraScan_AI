@@ -1,25 +1,26 @@
-FROM tensorflow/tensorflow:2.13.0-gpu
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# System deps
+RUN apt-get update && apt-get install -y \
+    python3.11 python3.11-dev python3.11-venv python3-pip git \
+    libglib2.0-0 libsm6 libxext6 libxrender-dev libgl1 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
 
-# System dependencies (for OpenCV, etc.)
-RUN apt-get update && apt-get install -y \
-    git \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgl1 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copys only requirements (caching optimization)
+# Copy locked requirements first
 COPY requirements.txt .
 
-# Installs Python deps (no TensorFlow here)
-RUN pip install --no-cache-dir -r requirements.txt
+# Python deps
+RUN python3.11 -m pip install --upgrade pip && \
+    python3.11 -m pip install --no-cache-dir -r requirements.txt
 
-# Copys the entire project
+# Optional: DVC if needed
+RUN python3.11 -m pip install --no-cache-dir "dvc[s3]"
+
+# Copy everything else
 COPY . .
 
-# Shows default behavior: open shell (DVC controls the execution)
-CMD ["bash"]
+CMD ["/bin/bash"]
