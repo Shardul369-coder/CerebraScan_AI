@@ -8,6 +8,10 @@ from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Concatenate, Input,
 from keras.models import Model
 from keras.optimizers import Adam
 from src.losses import hybrid_loss, dice_coef_multiclass
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    for gpu in gpus:
+        tensorflow.config.experimental.set_memory_growth(gpu, True)
 
 log_dir = 'logs'
 os.makedirs(log_dir, exist_ok=True)
