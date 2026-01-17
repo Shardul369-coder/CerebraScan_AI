@@ -1,6 +1,6 @@
 stages:
   train:
-    cmd: PYTHONPATH=. python src/Model_seg.py
+    cmd: PYTHONPATH=. python3.11 src/Model_seg.py
     deps:
       - src/Model_seg.py
       - src/data.py
@@ -13,7 +13,7 @@ stages:
       - checkpoints/seg_best.h5
 
   evaluate:
-    cmd: PYTHONPATH=. python src/model_evaluation.py
+    cmd: PYTHONPATH=. python3.11 src/model_evaluation.py
     deps:
       - src/model_evaluation.py
       - src/data.py
@@ -24,7 +24,7 @@ stages:
       - test_metrics.json
 
   inference:
-    cmd: PYTHONPATH=. python src/predict_and_stack.py
+    cmd: PYTHONPATH=. python3.11 src/predict_and_stack.py
     deps:
       - src/predict_and_stack.py
       - checkpoints/seg_best.h5
@@ -33,7 +33,7 @@ stages:
       - predictions_3d/
 
   export_nifti:
-    cmd: python src/export_nifti.py
+    cmd: python3.11 src/export_nifti.py
     deps:
       - src/export_nifti.py
       - predictions_3d/
