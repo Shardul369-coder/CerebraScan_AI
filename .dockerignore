@@ -1,0 +1,38 @@
+# Version control
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# OS junk
+.DS_Store
+
+# DVC cache (local only)
+.dvc/cache/
+.dvc/tmp/
+
+# Datasets & outputs (managed by DVC or mounted)
+raw_data/
+processed_data/
+predictions_3d/
+checkpoints/
+logs/
+tmp/
+
+# Large medical imaging files
+*.nii
+*.nii.gz
+*.dcm
+*.zip
+
+# Python envs
+venv/
+env/
+*.env/
