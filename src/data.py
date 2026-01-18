@@ -7,13 +7,23 @@ def load_npy(img_path, mask_path):
     img = np.load(img_path)
     mask = np.load(mask_path)
 
+    # resize image
     img = tf.image.resize(img, IMG_SIZE)
+
+    # resize mask (nearest keeps labels intact)
     mask = tf.image.resize(tf.expand_dims(mask, -1), IMG_SIZE, method="nearest")
 
-    mask = tf.squeeze(mask)
-    mask = tf.one_hot(tf.cast(mask, tf.int32), NUM_CLASSES)
+    # convert to int labels
+    mask = tf.cast(mask, tf.int32)
+
+    # remove that last 1-dim so shape becomes (H, W)
+    mask = tf.squeeze(mask, axis=-1)
+
+    # one-hot to (H, W, C)
+    mask = tf.one_hot(mask, NUM_CLASSES)
 
     return img, mask
+
 
 def get_dataset(split="Train", return_len=False):
     split_map = {
@@ -31,11 +41,11 @@ def get_dataset(split="Train", return_len=False):
 
     assert len(img_files) == len(mask_files), "Image/Mask count mismatch!"
 
-    batch_size = 4  # <--- set same as training
+    batch_size = 4
 
     if return_len:
         total = len(img_files)
-        steps = total // batch_size  # integer division
+        steps = total // batch_size
         return total, steps
 
     ds = tf.data.Dataset.from_tensor_slices(

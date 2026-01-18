@@ -8,7 +8,12 @@ from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Concatenate, Input,
 from keras.models import Model
 from keras.optimizers import Adam
 from src.losses import hybrid_loss, dice_coef_multiclass
-gpus = tf.config.list_physical_devices('GPU')
+import os
+os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir="
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ["TF_XLA_FLAGS"] = "--tf_xla_auto_jit=0"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+gpus = tensorflow.config.list_physical_devices('GPU')
 if gpus:
     for gpu in gpus:
         tensorflow.config.experimental.set_memory_growth(gpu, True)
