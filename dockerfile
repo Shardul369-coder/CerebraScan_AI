@@ -27,9 +27,10 @@ WORKDIR /workspace
 
 COPY requirements.txt .
 
+# Install Python dependencies + GPU-enabled TF 2.17.0 + DVC
 RUN python -m pip install --upgrade pip && \
     python -m pip install --no-cache-dir -r requirements.txt && \
-    python -m pip install --no-cache-dir tensorflow==2.17.0 && \
+    python -m pip install --no-cache-dir --extra-index-url https://pypi.ngc.nvidia.com tensorflow==2.17.0 && \
     python -m pip install --no-cache-dir "dvc[s3]"
 
 COPY . .
