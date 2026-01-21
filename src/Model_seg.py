@@ -60,35 +60,35 @@ def conv_block(x, filters):
 def unet2d(input_shape, num_classes):
     inputs = Input(shape=input_shape)
 
-    c1 = conv_block(inputs, 64)
+    c1 = conv_block(inputs, 16)
     p1 = MaxPooling2D()(c1)
 
-    c2 = conv_block(p1, 128)
+    c2 = conv_block(p1, 32)
     p2 = MaxPooling2D()(c2)
 
-    c3 = conv_block(p2, 256)
+    c3 = conv_block(p2, 64)
     p3 = MaxPooling2D()(c3)
 
-    c4 = conv_block(p3, 512)
+    c4 = conv_block(p3, 128)
     p4 = MaxPooling2D()(c4)
 
-    c5 = conv_block(p4, 1024)
+    c5 = conv_block(p4, 256)
 
     u6 = UpSampling2D()(c5)
     u6 = Concatenate()([u6, c4])
-    c6 = conv_block(u6, 512)
+    c6 = conv_block(u6, 128)
 
     u7 = UpSampling2D()(c6)
     u7 = Concatenate()([u7, c3])
-    c7 = conv_block(u7, 256)
+    c7 = conv_block(u7, 64)
 
     u8 = UpSampling2D()(c7)
     u8 = Concatenate()([u8, c2])
-    c8 = conv_block(u8, 128)
+    c8 = conv_block(u8, 32)
 
     u9 = UpSampling2D()(c8)
     u9 = Concatenate()([u9, c1])
-    c9 = conv_block(u9, 64)
+    c9 = conv_block(u9, 16)
 
     outputs = Conv2D(num_classes, 1, activation="softmax")(c9)
 
