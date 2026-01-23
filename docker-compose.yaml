@@ -1,0 +1,18 @@
+services:
+  cerebrascan:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/workspace
+    command: >
+      sh -c "
+      # First generate the visualizations
+      echo 'Generating visualizations...' &&
+      python src/render_3d.py &&
+      
+      # Then start a web server to view them
+      echo 'Starting web server at http://localhost:8080' &&
+      echo 'Open browser to view results' &&
+      python -m http.server 8080 --directory visualizations
+      "
