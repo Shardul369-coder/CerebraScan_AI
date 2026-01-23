@@ -7,7 +7,14 @@ def export_nifti(volume_path, out_dir="nifti_outputs"):
     out_dir.mkdir(exist_ok=True)
 
     volume = np.load(volume_path).astype(np.uint8)
-    affine = np.load("affines/patient_001_affine.npy")
+    
+    # Create default affine matrix (identity + offset)
+    # This assumes voxel size of 1x1x1 mm and no rotation
+    affine = np.eye(4)
+    affine[0, 0] = 1.0  # mm per voxel in x
+    affine[1, 1] = 1.0  # mm per voxel in y  
+    affine[2, 2] = 1.0  # mm per voxel in z
+    
     nii = nib.Nifti1Image(volume, affine=affine)
 
     out_path = out_dir / (Path(volume_path).stem + ".nii.gz")

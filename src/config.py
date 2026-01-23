@@ -1,11 +1,15 @@
+from ruamel.yaml import YAML
 from pathlib import Path
-from pathlib import Path
+
+yaml = YAML()
+params = yaml.load(open("params.yaml"))["model_seg"]
 
 PROCESSED_DATA_DIR = Path("processed_data")
 RAW_DATA_DIR = Path("data/raw")
-NUM_CLASSES = 4   # 0..3 BRATS labels
-INPUT_CHANNELS = 4  # 2.5D slices
-IMG_SIZE = (240, 240)
-BATCH_SIZE = 4
-EPOCHS = 50
-LEARNING_RATE = 1e-4
+
+IMG_SIZE = tuple(params["IMG_SIZE"])        # <--- FIX HERE
+INPUT_CHANNELS = params["INPUT_CHANNELS"]
+NUM_CLASSES = params["NUM_CLASSES"]
+BATCH_SIZE = params["BATCH_SIZE"]
+EPOCHS = params["EPOCHS"]
+LEARNING_RATE = params["LEARNING_RATE"]

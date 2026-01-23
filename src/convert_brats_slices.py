@@ -109,12 +109,14 @@ def process_patient(patient_dir: Path, img_dir: Path, mask_dir: Path):
     saved = 0
 
     for i in range(depth):
-        m = mask[:, :, i]
+        m = mask[:, :, i].astype(np.int32)
         if np.count_nonzero(m) < MIN_TUMOR_PIXELS:
             continue
 
-        x = volume[:, :, i, :]
-        y = m
+        # Remap BRATS labels: 4 → 3 (ET)
+        m[m == 4] = 3
+        x = volume[:, :, i, :].astype(np.float32)
+        y = m.copy()
 
         np.save(img_dir / f"{pid}_slice_{i:03d}.npy", x)
         np.save(mask_dir / f"{pid}_slice_{i:03d}.npy", y)
@@ -173,5 +175,7 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as exc:
-        print(logger.exception(f"FATAL ERROR: {exc}"))
+        print(f"FATAL ERROR: {exc}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)

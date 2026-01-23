@@ -7,11 +7,13 @@ from src.losses import dice_coef_multiclass
 import tensorflow as tf
 from src.config import IMG_SIZE, INPUT_CHANNELS
 
+# In predict_and_stack.py, update the load_image_only function:
 def load_image_only(img_path):
     img = np.load(img_path)
+    img = tf.convert_to_tensor(img, tf.float32)
     img = tf.image.resize(img, IMG_SIZE)
     return img.numpy()
-
+    
 def predict_patient(model, slice_paths):
     volume = []
 

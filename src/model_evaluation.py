@@ -29,7 +29,7 @@ def evaluate_model(model_path="checkpoints/seg_best.h5", output_path="test_metri
     model = load_model(model_path, compile=False, custom_objects={"dice_coef_multiclass": dice_coef_multiclass})
 
     # Load test dataset
-    test_ds = get_dataset("Test")
+    test_ds, test_steps = get_dataset("Test")
 
     dice_scores = []
     iou_scores = []
@@ -37,14 +37,20 @@ def evaluate_model(model_path="checkpoints/seg_best.h5", output_path="test_metri
     print("[INFO] Running evaluation on Test set...")
 
     for images, masks in test_ds:
-        preds = model.predict(images)
+        preds = model.predict(images, verbose=0)
+        
+        # Convert masks to numpy if needed
+        if hasattr(masks, 'numpy'):
+            masks_np = masks.numpy()
+        else:
+            masks_np = masks
         
         # Dice (uses your custom metric)
-        dice = dice_coef_multiclass(masks, preds).numpy()
+        dice = dice_coef_multiclass(masks_np, preds).numpy()
         dice_scores.append(float(dice))
 
         # IoU (uses numpy function above)
-        iou = compute_iou(masks.numpy(), preds.numpy(), preds.shape[-1])
+        iou = compute_iou(masks_np, preds, preds.shape[-1])
         iou_scores.append(iou)
 
     # Aggregate final metrics
