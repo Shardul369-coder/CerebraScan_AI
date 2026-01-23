@@ -22,3 +22,7 @@ Project_flow.txt
 
 /processed_data
 /logs
+/test_metrics.json
+/predictions_3d
+/nifti_outputs
+/visualizations
