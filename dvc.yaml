@@ -39,3 +39,13 @@ stages:
       - predictions_3d/
     outs:
       - nifti_outputs/
+
+  visualize:
+    cmd: python3.11 src/render_3d.py
+    deps:
+      - src/render_3d.py
+      - predictions_3d/
+    outs:
+      - visualizations/
+    params:
+      - model_seg.IMG_SIZE
