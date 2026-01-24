@@ -7,8 +7,10 @@ from tensorflow import keras
 from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Concatenate, Input, Flatten, Dense
 from keras.models import Model
 from keras.optimizers import Adam
-from src.losses import hybrid_loss, dice_coef_multiclass
+# CHANGED: from hybrid_loss to focal_dice_loss
+from src.losses import focal_dice_loss, dice_coef_multiclass  # ← LINE 7 CHANGED
 import os
+
 os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir="
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ["TF_XLA_FLAGS"] = "--tf_xla_auto_jit=0"
@@ -102,9 +104,10 @@ def train_segmentation(train, val, params):
         input_shape = (params['IMG_SIZE'][0], params['IMG_SIZE'][1], params['INPUT_CHANNELS'])
         model = unet2d(input_shape=input_shape, num_classes=params['NUM_CLASSES'])
         model.summary(print_fn=lambda x: logger.debug(x))
+        # CHANGED: loss from hybrid_loss to focal_dice_loss
         model.compile(
             optimizer=Adam(learning_rate=params['LEARNING_RATE']),
-            loss=hybrid_loss,
+            loss=focal_dice_loss,  # ← LINE 100 CHANGED
             metrics=[dice_coef_multiclass]
         )
 

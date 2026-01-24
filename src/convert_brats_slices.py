@@ -13,9 +13,9 @@ import nibabel as nib
 RAW_DATA_DIR = Path("raw_data")
 OUTPUT_DIR = Path("processed_data")
 
-TRAIN_COUNT = 60
-VAL_COUNT = 30
-TEST_COUNT = 10
+TRAIN_COUNT = 600
+VAL_COUNT = 300
+TEST_COUNT = 100
 
 MIN_TUMOR_PIXELS = 10
 NORMALIZE = True
