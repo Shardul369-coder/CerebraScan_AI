@@ -134,11 +134,14 @@ def render_all_patients(pred_dir="predictions_3d", output_dir="visualizations"):
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)
 
-    patients = list(pred_dir.glob("*.npy"))
+    # Ignore probability volumes
+    patients = sorted(pred_dir.glob("*_slice_3d.npy"))
+
     print(f"[INFO] Found {len(patients)} patients to visualize")
 
     for pred_file in patients:
-        patient_id = pred_file.stem.replace("_3d", "")
+        patient_id = pred_file.stem.replace("_slice_3d", "")
+
         print(f"[PROCESSING] {patient_id}")
 
         volume_3d = np.load(pred_file)
