@@ -49,3 +49,4 @@ stages:
       - visualizations/
     params:
       - model_seg.IMG_SIZE
+      
