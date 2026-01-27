@@ -2,7 +2,7 @@ import json
 import numpy as np
 from keras.models import load_model
 from src.data import get_dataset
-from src.losses import dice_coef_multiclass
+from src.losses import dice_coef_multiclass, dice_coef_multiclass_no_bg
 
 def compute_iou(y_true, y_pred, num_classes):
     """
@@ -23,15 +23,22 @@ def compute_iou(y_true, y_pred, num_classes):
 
     return float(np.nanmean(ious))
 
-
+# Around line 25, update function:
 def evaluate_model(model_path="checkpoints/seg_best.h5", output_path="test_metrics.json"):
-    # Load model (compile=False to avoid missing custom objects)
-    model = load_model(model_path, compile=False, custom_objects={"dice_coef_multiclass": dice_coef_multiclass})
+    # Load model
+    model = load_model(
+        model_path, 
+        compile=False, 
+        custom_objects={
+            "dice_coef_multiclass": dice_coef_multiclass,
+            "dice_coef_multiclass_no_bg": dice_coef_multiclass_no_bg
+        }
+    )
 
-    # Load test dataset
     test_ds, test_steps = get_dataset("Test")
 
     dice_scores = []
+    dice_tumor_scores = []  # NEW: Track tumor-only dice
     iou_scores = []
 
     print("[INFO] Running evaluation on Test set...")
@@ -45,31 +52,35 @@ def evaluate_model(model_path="checkpoints/seg_best.h5", output_path="test_metri
         else:
             masks_np = masks
         
-        # Dice (uses your custom metric)
+        # Overall Dice (includes background)
         dice = dice_coef_multiclass(masks_np, preds).numpy()
         dice_scores.append(float(dice))
+        
+        # Tumor-only Dice (KEY METRIC!)
+        dice_tumor = dice_coef_multiclass_no_bg(masks_np, preds).numpy()
+        dice_tumor_scores.append(float(dice_tumor))
 
-        # IoU (uses numpy function above)
+        # IoU
         iou = compute_iou(masks_np, preds, preds.shape[-1])
         iou_scores.append(iou)
 
     # Aggregate final metrics
     results = {
         "test_mean_dice": float(np.mean(dice_scores)),
+        "test_mean_dice_tumor_only": float(np.mean(dice_tumor_scores)),  # NEW!
         "test_mean_iou": float(np.mean(iou_scores))
     }
 
-    # Save to json
     with open(output_path, "w") as f:
         json.dump(results, f, indent=4)
 
     print("===== TEST METRICS =====")
-    print(f"Mean Dice: {results['test_mean_dice']:.4f}")
-    print(f"Mean IoU:  {results['test_mean_iou']:.4f}")
+    print(f"Mean Dice (all):   {results['test_mean_dice']:.4f}")
+    print(f"Mean Dice (tumor): {results['test_mean_dice_tumor_only']:.4f}")  # ADD THIS
+    print(f"Mean IoU:          {results['test_mean_iou']:.4f}")
     print("========================")
 
     return results
-
 
 if __name__ == "__main__":
     evaluate_model()

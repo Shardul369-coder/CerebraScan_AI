@@ -8,7 +8,12 @@ from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Concatenate, Input,
 from keras.models import Model
 from keras.optimizers import Adam
 # CHANGED: from hybrid_loss to focal_dice_loss
-from src.losses import focal_dice_loss, dice_coef_multiclass  # ← LINE 7 CHANGED
+from src.losses import (
+    focal_dice_loss, 
+    dice_coef_multiclass,
+    dice_coef_multiclass_no_bg,      # NEW: Monitor tumor-only dice
+    weighted_focal_dice_loss          # NEW: Weighted loss for imbalance
+)
 import os
 
 os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir="
@@ -105,10 +110,11 @@ def train_segmentation(train, val, params):
         model = unet2d(input_shape=input_shape, num_classes=params['NUM_CLASSES'])
         model.summary(print_fn=lambda x: logger.debug(x))
         # CHANGED: loss from hybrid_loss to focal_dice_loss
+        loss_fn = weighted_focal_dice_loss([0.1, 1.5, 1.5, 2.0])
         model.compile(
             optimizer=Adam(learning_rate=params['LEARNING_RATE']),
-            loss=focal_dice_loss,  # ← LINE 100 CHANGED
-            metrics=[dice_coef_multiclass]
+            loss=loss_fn,
+            metrics=[dice_coef_multiclass, dice_coef_multiclass_no_bg]
         )
 
         train_ds = train_ds.prefetch(tensorflow.data.AUTOTUNE)
@@ -120,12 +126,26 @@ def train_segmentation(train, val, params):
             keras.callbacks.ModelCheckpoint(
                 filepath="checkpoints/seg_best.h5",
                 save_best_only=True,
-                monitor="val_dice_coef_multiclass",
-                mode="max"
+                monitor="val_dice_coef_multiclass_no_bg",  # Changed: Monitor tumor dice!
+                mode="max",
+                verbose=1
             ),
-            keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=3),
-            keras.callbacks.EarlyStopping(monitor="val_dice_coef_multiclass", mode="max", patience=7, restore_best_weights=True)
-        ]
+            keras.callbacks.ReduceLROnPlateau(
+                monitor="val_dice_coef_multiclass_no_bg",  # Changed: Monitor tumor dice
+                mode="max",
+                patience=5,                                 # Changed: Increased from 3 (for batch=1)
+                factor=0.5,
+                min_lr=1e-6,
+                verbose=1
+            ),
+            keras.callbacks.EarlyStopping(
+                monitor="val_dice_coef_multiclass_no_bg",  # Changed: Monitor tumor dice
+                mode="max",
+                patience=10,                                # Changed: Increased from 7 (for batch=1)
+                restore_best_weights=True,
+                verbose=1
+            )
+            ]
 
         logger.debug('Model training started')
         logger.debug(f"Training for {params['EPOCHS']} epochs...")

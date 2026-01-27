@@ -3,154 +3,395 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import nibabel as nib
 from matplotlib.colors import ListedColormap
+from scipy import ndimage
+import warnings
+warnings.filterwarnings('ignore')
 
-# ======== MRI MODALITY SELECTION ========
-MRI_MODALITY = "flair"  # options: flair, t1, t1ce, t2
+# ======== CONFIGURATION ========
+MRI_MODALITY = "flair"  # Can also try "t1ce", "t1", "t2"
+PRED_DIR = Path("predictions_3d")
+OUTPUT_DIR = Path("visualizations")
+RAW_DATA_DIR = Path("raw_data")
 
-# ======== COLOR MAP FOR MULTI-CLASS ========
+# High resolution settings
+DPI = 300
+FIGSIZE = (10, 10)
+
+# ======== IMPROVED COLOR MAP with Green, Yellow, and Blue ========
 BRATS_CMAP = ListedColormap([
-    (0, 0, 0, 0),      # 0 = background (transparent)
-    (0, 0, 1, 0.6),    # 1 = NET/NCR (blue)
-    (1, 1, 0, 0.6),    # 2 = Edema (yellow)
-    (1, 0, 0, 0.6),    # 3 = ET (red)
+    (0, 0, 0, 0),          # 0 = background (transparent)
+    (0, 0.4, 1, 0.8),      # 1 = Blue - NET/NCR 
+    (0, 1, 0, 0.7),        # 2 = Green - Edema
+    (1, 1, 0, 0.85),       # 3 = Yellow - Enhancing Tumor
 ])
 
-# ======== MRI FINDER =========
-def load_mri_volume(patient_id):
-    patient_dir = Path("raw_data") / patient_id
+# ======== ALIGNMENT FUNCTIONS ========
 
-    files = list(patient_dir.iterdir())
-    files_l = [f.name.lower() for f in files]
+def align_prediction_to_mri(pred_vol, mri_vol):
+    """Align prediction volume to MRI volume by resizing"""
+    if pred_vol.shape == mri_vol.shape:
+        print(f"  ✓ Volumes already aligned: {pred_vol.shape}")
+        return pred_vol
+    
+    print(f"  → Aligning prediction {pred_vol.shape} to MRI {mri_vol.shape}")
+    
+    # Calculate zoom factors
+    zoom_factors = [mri_vol.shape[i] / pred_vol.shape[i] for i in range(3)]
+    print(f"  → Zoom factors: [{zoom_factors[0]:.2f}, {zoom_factors[1]:.2f}, {zoom_factors[2]:.2f}]")
+    
+    # Resize using nearest neighbor to preserve class labels
+    aligned_pred = ndimage.zoom(pred_vol, zoom_factors, order=0)
+    
+    # Ensure exact dimensions match
+    if aligned_pred.shape != mri_vol.shape:
+        print(f"  → Fine-tuning from {aligned_pred.shape} to {mri_vol.shape}")
+        aligned_pred = match_dimensions(aligned_pred, mri_vol.shape)
+    
+    print(f"  ✓ Aligned to: {aligned_pred.shape}")
+    return aligned_pred
 
-    if MRI_MODALITY == "flair":
-        keys = ["t2f"]            # your dataset's FLAIR
-    elif MRI_MODALITY == "t1":
-        keys = ["t1n"]
-    elif MRI_MODALITY == "t1ce":
-        keys = ["t1c"]
-    elif MRI_MODALITY == "t2":
-        keys = ["t2w"]
-    else:
-        raise ValueError(f"Invalid modality {MRI_MODALITY}")
+def match_dimensions(array, target_shape):
+    """Match array dimensions to target shape by cropping or padding"""
+    result = array.copy()
+    
+    for axis in range(3):
+        current_size = result.shape[axis]
+        target_size = target_shape[axis]
+        
+        if current_size > target_size:
+            # Crop
+            diff = current_size - target_size
+            start = diff // 2
+            end = start + target_size
+            if axis == 0:
+                result = result[start:end, :, :]
+            elif axis == 1:
+                result = result[:, start:end, :]
+            else:
+                result = result[:, :, start:end]
+        elif current_size < target_size:
+            # Pad
+            diff = target_size - current_size
+            pad_before = diff // 2
+            pad_after = diff - pad_before
+            pad_width = [(0, 0), (0, 0), (0, 0)]
+            pad_width[axis] = (pad_before, pad_after)
+            result = np.pad(result, pad_width, mode='constant', constant_values=0)
+    
+    return result
 
-    # Match files correctly
-    for f in files:
-        fname = f.name.lower()
-        if any(k in fname for k in keys) and fname.endswith(".nii.gz"):
-            vol = nib.load(str(f)).get_fdata().astype(np.float32)
-            vol = (vol - vol.mean()) / (vol.std() + 1e-8)
-            return vol
+# ======== LOADERS ========
 
-    raise FileNotFoundError(f"No MRI modality {MRI_MODALITY} found for {patient_id}")
+def load_prediction(pred_file):
+    """Load prediction file and convert to class labels"""
+    try:
+        pred = np.load(pred_file)
+        if pred.ndim == 4:
+            pred = np.argmax(pred, axis=-1)
+        print(f"  Prediction: {pred.shape}, classes={np.unique(pred)}, slices={pred.shape[2]}")
+        return pred
+    except Exception as e:
+        print(f"  [ERROR] Failed to load prediction: {e}")
+        return None
 
-# ========= SLICE VISUALIZATION =========
-def save_slice_visualizations(volume_3d, mri_3d, patient_id, output_dir):
-    output_dir = Path(output_dir) / patient_id
-    output_dir.mkdir(parents=True, exist_ok=True)
+def load_all_mri_modalities(patient_id):
+    """Load all available MRI modalities and return the best one"""
+    # Remove _slice suffix if present
+    clean_id = patient_id.replace("_slice", "")
+    
+    patient_dir = RAW_DATA_DIR / clean_id
+    if not patient_dir.exists():
+        print(f"  [ERROR] MRI folder not found: {patient_dir}")
+        return None
+    
+    print(f"  Scanning folder: {patient_dir}")
+    
+    # Look for all NIfTI files
+    nii_files = {}
+    for f in patient_dir.iterdir():
+        if f.suffix in [".nii", ".gz"] or f.name.endswith(".nii.gz"):
+            # Identify modality from filename
+            fname_lower = f.name.lower()
+            if 'flair' in fname_lower:
+                nii_files['flair'] = f
+            elif 't1ce' in fname_lower or 't1-ce' in fname_lower:
+                nii_files['t1ce'] = f
+            elif 't2' in fname_lower:
+                nii_files['t2'] = f
+            elif 't1' in fname_lower:
+                nii_files['t1'] = f
+            elif 'seg' not in fname_lower:  # Skip segmentation files
+                nii_files['other'] = f
+            print(f"    Found: {f.name}")
+    
+    if not nii_files:
+        print(f"  [ERROR] No NIfTI files found in {patient_dir}")
+        return None
+    
+    # Try modalities in preferred order
+    modality_priority = ['flair', 't1ce', 't2', 't1', 'other']
+    
+    for modality in modality_priority:
+        if modality in nii_files:
+            load_file = nii_files[modality]
+            print(f"  → Loading MRI ({modality}): {load_file.name}")
+            
+            try:
+                vol = nib.load(str(load_file)).get_fdata()
+                print(f"  → Raw MRI range: [{vol.min():.2f}, {vol.max():.2f}]")
+                print(f"  → Raw MRI shape: {vol.shape}")
+                
+                # Check if volume has data
+                if vol.max() == 0 or np.all(vol == 0):
+                    print(f"  [WARNING] {modality} volume is all zeros, trying next modality...")
+                    continue
+                
+                # Check if volume has enough non-zero data
+                non_zero_ratio = np.sum(vol > 0) / vol.size
+                if non_zero_ratio < 0.01:  # Less than 1% non-zero
+                    print(f"  [WARNING] {modality} has insufficient data ({non_zero_ratio*100:.2f}% non-zero), trying next...")
+                    continue
+                
+                # Normalize volume for better visualization
+                # Use percentile-based normalization
+                non_zero_vals = vol[vol > 0]
+                if len(non_zero_vals) > 0:
+                    p1, p99 = np.percentile(non_zero_vals, [1, 99])
+                    vol = np.clip(vol, p1, p99)
+                    vol = (vol - p1) / (p99 - p1 + 1e-8)
+                else:
+                    # Fallback to simple normalization
+                    vol = (vol - vol.min()) / (vol.max() - vol.min() + 1e-8)
+                
+                print(f"  → Normalized MRI range: [{vol.min():.2f}, {vol.max():.2f}]")
+                print(f"  ✓ Successfully loaded {modality}: {vol.shape}, slices={vol.shape[2]}")
+                
+                return vol
+                
+            except Exception as e:
+                print(f"  [ERROR] Failed to load {modality}: {e}")
+                continue
+    
+    print(f"  [ERROR] Could not load any valid MRI modality")
+    return None
 
-    depth = volume_3d.shape[2]
-    step = max(1, depth // 10)
-    slice_indices = list(range(0, depth, step))
+# ======== SAVE HELPERS ========
 
-    print(f"  Saving {len(slice_indices)} slices for {patient_id}")
+def save_overlay_slice(mri_slice, pred_slice, patient_id, slice_idx, output_dir, total_slices):
+    """Save MRI with prediction overlay in high resolution"""
+    out_file = output_dir / f"slice_{slice_idx:03d}_overlay.png"
+    
+    # Check if MRI slice has data
+    mri_has_data = np.max(mri_slice) > 0.01
+    
+    if not mri_has_data:
+        # If no MRI data, skip this slice or create a warning
+        return None
+    
+    fig, ax = plt.subplots(figsize=FIGSIZE)
+    
+    # Display MRI in grayscale
+    ax.imshow(mri_slice, cmap="gray", interpolation='bilinear', 
+              origin='lower', vmin=0, vmax=1)
+    
+    # Overlay prediction with transparency (only where tumor exists)
+    if np.max(pred_slice) > 0:
+        ax.imshow(pred_slice, cmap=BRATS_CMAP, alpha=0.65, vmin=0, vmax=3, 
+                  interpolation='nearest', origin='lower')
+    
+    # Add title
+    ax.set_title(f"{patient_id} - Slice {slice_idx+1}/{total_slices}", 
+                fontsize=14, fontweight="bold", pad=10)
+    ax.axis('off')
+    
+    # Save
+    plt.savefig(out_file, dpi=DPI, bbox_inches='tight', facecolor='white', edgecolor='none')
+    plt.close(fig)
+    
+    return out_file
 
-    for i in slice_indices:
-        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-
-        mri_slice = mri_3d[:, :, i]
-        mask_slice = volume_3d[:, :, i]
-
-        ax.imshow(mri_slice, cmap="gray")
-        ax.imshow(mask_slice, cmap=BRATS_CMAP, vmin=0, vmax=3)
-        ax.set_title(f"{patient_id} - Slice {i}/{depth}")
-        ax.axis("off")
-
-        plt.tight_layout()
-        plt.savefig(output_dir / f"slice_{i:03d}.png", dpi=150, bbox_inches="tight")
-        plt.close()
-
-    return len(slice_indices)
-
-# ========= 3D MIP PROJECTION =========
-def create_3d_projection(volume_3d, patient_id, output_dir):
-    output_dir = Path(output_dir) / patient_id
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-
-    mip_axial = np.max(volume_3d, axis=2)
-    mip_coronal = np.max(volume_3d, axis=1)
-    mip_sagittal = np.max(volume_3d, axis=0)
-
-    axes[0].imshow(mip_axial, cmap=BRATS_CMAP, vmin=0, vmax=3)
-    axes[0].set_title("Axial MIP"); axes[0].axis("off")
-
-    axes[1].imshow(mip_coronal.T, cmap=BRATS_CMAP, vmin=0, vmax=3)
-    axes[1].set_title("Coronal MIP"); axes[1].axis("off")
-
-    axes[2].imshow(mip_sagittal.T, cmap=BRATS_CMAP, vmin=0, vmax=3)
-    axes[2].set_title("Sagittal MIP"); axes[2].axis("off")
-
+def save_comparison_view(mri_slice, pred_slice, patient_id, slice_idx, output_dir, total_slices):
+    """Save side-by-side comparison"""
+    out_file = output_dir / f"slice_{slice_idx:03d}_comparison.png"
+    
+    # Check if MRI has data
+    if np.max(mri_slice) <= 0.01:
+        return None
+    
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    
+    # MRI only
+    axes[0].imshow(mri_slice, cmap="gray", interpolation='bilinear', origin='lower', vmin=0, vmax=1)
+    axes[0].set_title("MRI", fontsize=12, fontweight="bold")
+    axes[0].axis('off')
+    
+    # MRI + Overlay
+    axes[1].imshow(mri_slice, cmap="gray", interpolation='bilinear', origin='lower', vmin=0, vmax=1)
+    if np.max(pred_slice) > 0:
+        axes[1].imshow(pred_slice, cmap=BRATS_CMAP, alpha=0.65, vmin=0, vmax=3, 
+                       interpolation='nearest', origin='lower')
+    axes[1].set_title("MRI + Prediction Overlay", fontsize=12, fontweight="bold")
+    axes[1].axis('off')
+    
+    # Prediction only
+    axes[2].imshow(pred_slice, cmap=BRATS_CMAP, vmin=0, vmax=3, 
+                   interpolation='nearest', origin='lower')
+    axes[2].set_title("Segmentation (Blue=NET/NCR, Green=Edema, Yellow=ET)", 
+                     fontsize=10, fontweight="bold")
+    axes[2].axis('off')
+    
+    fig.suptitle(f"{patient_id} - Slice {slice_idx+1}/{total_slices}", 
+                 fontsize=14, fontweight="bold", y=0.98)
+    
     plt.tight_layout()
-    plt.savefig(output_dir / "3d_projection.png", dpi=150, bbox_inches="tight")
+    plt.savefig(out_file, dpi=DPI, bbox_inches='tight', facecolor='white', edgecolor='none')
+    plt.close(fig)
+    
+    return out_file
+
+def create_legend_image(output_dir):
+    """Create color legend"""
+    legend_file = output_dir / "color_legend.png"
+    
+    fig, ax = plt.subplots(figsize=(8, 3))
+    ax.axis('off')
+    
+    colors = [(0, 0.4, 1), (0, 1, 0), (1, 1, 0)]
+    labels = ['Blue: NET/NCR (Non-enhancing tumor)', 
+              'Green: Edema (Peritumoral edema)', 
+              'Yellow: ET (Enhancing tumor)']
+    
+    y_positions = [0.7, 0.45, 0.2]
+    
+    for color, label, y_pos in zip(colors, labels, y_positions):
+        rect = plt.Rectangle((0.1, y_pos), 0.12, 0.12, 
+                            facecolor=color, edgecolor='black', linewidth=2)
+        ax.add_patch(rect)
+        ax.text(0.27, y_pos + 0.06, label, 
+               fontsize=13, fontweight='bold', va='center')
+    
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_title("BraTS Tumor Segmentation - Color Legend", 
+                fontsize=15, fontweight='bold', pad=15)
+    
+    plt.savefig(legend_file, dpi=DPI, bbox_inches='tight', facecolor='white')
     plt.close()
+    
+    print(f"  ✓ Legend saved: {legend_file}")
+    return legend_file
 
-# ========= SUMMARY =========
-def create_patient_summary(volume_3d, patient_id, output_dir):
-    output_dir = Path(output_dir) / patient_id
-    output_dir.mkdir(parents=True, exist_ok=True)
+# ======== MAIN VISUALIZATION ========
 
-    tumor_mask = volume_3d > 0
-    tumor_voxels = np.sum(tumor_mask)
-    total_voxels = volume_3d.size
-    tumor_percentage = (tumor_voxels / total_voxels) * 100
+def visualize_patient(patient_id, pred_file, save_comparison=True, save_all_slices=False):
+    """Generate overlay visualizations"""
+    print("\n" + "="*60)
+    print(f"VISUALIZING: {patient_id}")
+    print("="*60)
 
-    fig = plt.figure(figsize=(12, 8))
-    ax = plt.subplot(2, 2, 1)
-    ax.imshow(np.max(volume_3d, axis=2), cmap=BRATS_CMAP, vmin=0, vmax=3)
-    ax.set_title("Axial MIP"); ax.axis("off")
+    # Create output directory
+    out_dir = OUTPUT_DIR / patient_id
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    mid = volume_3d.shape[2] // 2
-    ax = plt.subplot(2, 2, 2)
-    ax.imshow(volume_3d[:, :, mid], cmap=BRATS_CMAP, vmin=0, vmax=3)
-    ax.set_title("Middle Slice"); ax.axis("off")
+    # Create legend
+    create_legend_image(out_dir)
 
-    ax = plt.subplot(2, 2, 3)
-    ax.text(0.1, 0.8, f"Patient: {patient_id}", fontsize=12)
-    ax.text(0.1, 0.6, f"Tumor Voxels: {tumor_voxels:,}", fontsize=12)
-    ax.text(0.1, 0.4, f"Total Voxels: {total_voxels:,}", fontsize=12)
-    ax.text(0.1, 0.2, f"Tumor %: {tumor_percentage:.2f}%", fontsize=12)
-    ax.axis("off")
+    # Load prediction
+    pred_vol = load_prediction(pred_file)
+    if pred_vol is None:
+        return
 
-    plt.tight_layout()
-    plt.savefig(output_dir / "summary.png", dpi=150, bbox_inches="tight")
-    plt.close()
+    # Load MRI (try all modalities)
+    mri_vol = load_all_mri_modalities(patient_id)
+    if mri_vol is None:
+        print("  [ERROR] Cannot create overlays without valid MRI data")
+        return
 
-    return tumor_voxels, tumor_percentage
+    # Align prediction to MRI
+    pred_vol_aligned = align_prediction_to_mri(pred_vol, mri_vol)
 
-# ========= MAIN DRIVER =========
-def render_all_patients(pred_dir="predictions_3d", output_dir="visualizations"):
-    pred_dir = Path(pred_dir)
-    output_dir = Path(output_dir)
-    output_dir.mkdir(exist_ok=True)
+    # Process slices
+    depth = pred_vol_aligned.shape[2]
+    print(f"\n  📊 Processing {depth} slices...")
 
-    # Ignore probability volumes
-    patients = sorted(pred_dir.glob("*_slice_3d.npy"))
+    saved_count = 0
+    slices_with_tumor = 0
+    slices_with_mri = 0
+    
+    for slice_idx in range(depth):
+        mri_slice = mri_vol[:, :, slice_idx]
+        pred_slice = pred_vol_aligned[:, :, slice_idx]
+        
+        has_mri = np.max(mri_slice) > 0.01
+        has_tumor = np.max(pred_slice) > 0
+        
+        if has_mri:
+            slices_with_mri += 1
+        if has_tumor:
+            slices_with_tumor += 1
+        
+        # Only save slices with MRI data
+        if has_mri and (save_all_slices or has_tumor):
+            # Save overlay
+            result = save_overlay_slice(mri_slice, pred_slice, patient_id, slice_idx, out_dir, depth)
+            if result:
+                saved_count += 1
+            
+            # Save comparison for key slices
+            if save_comparison and has_tumor and (slice_idx % 10 == 0 or np.sum(pred_slice > 0) > 200):
+                save_comparison_view(mri_slice, pred_slice, patient_id, slice_idx, out_dir, depth)
+        
+        # Progress
+        if (slice_idx + 1) % 20 == 0 or (slice_idx + 1) == depth:
+            print(f"  → Progress: {slice_idx + 1}/{depth} slices processed...")
 
-    print(f"[INFO] Found {len(patients)} patients to visualize")
+    print(f"\n  ✅ Summary:")
+    print(f"     - Total slices: {depth}")
+    print(f"     - Slices with MRI data: {slices_with_mri}")
+    print(f"     - Slices with tumor: {slices_with_tumor}")
+    print(f"     - Images saved: {saved_count}")
+    print(f"     - Output: {out_dir}")
+    print(f"  🎨 Colors: Blue (NET/NCR), Green (Edema), Yellow (ET)")
 
-    for pred_file in patients:
-        patient_id = pred_file.stem.replace("_slice_3d", "")
+# ======== BATCH RUN ========
 
-        print(f"[PROCESSING] {patient_id}")
+def visualize_all(save_comparison=True, save_all_slices=False):
+    """Process all patients"""
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    
+    pred_files = sorted([f for f in PRED_DIR.glob("*_3d.npy") if "_probs_" not in f.name])
 
-        volume_3d = np.load(pred_file)
-        mri_3d = load_mri_volume(patient_id)
-
-        save_slice_visualizations(volume_3d, mri_3d, patient_id, output_dir)
-        create_3d_projection(volume_3d, patient_id, output_dir)
-        create_patient_summary(volume_3d, patient_id, output_dir)
+    print("="*60)
+    print("  3D BRAIN TUMOR VISUALIZATION")
+    print("  Green-Yellow-Blue Color Scheme with MRI Background")
+    print("="*60)
+    print(f"[CONFIG] DPI: {DPI}")
+    print(f"[CONFIG] Comparisons: {'Yes' if save_comparison else 'No'}")
+    print(f"[CONFIG] Save all slices: {'Yes' if save_all_slices else 'Only tumor slices'}")
+    print(f"[INFO] Found {len(pred_files)} prediction files")
+    
+    if not RAW_DATA_DIR.exists():
+        print(f"[ERROR] Raw data directory not found: {RAW_DATA_DIR}")
+        return
+    
+    success_count = 0
+    for idx, pf in enumerate(pred_files, 1):
+        pid = pf.stem.replace("_3d", "")
+        print(f"\n[{idx}/{len(pred_files)}] Processing: {pid}")
+        
+        try:
+            visualize_patient(pid, pf, save_comparison=save_comparison, save_all_slices=save_all_slices)
+            success_count += 1
+        except Exception as e:
+            print(f"  [ERROR] Failed: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print("\n" + "="*60)
+    print(f"✅ Complete! Processed {success_count}/{len(pred_files)} patients")
+    print("="*60)
 
 if __name__ == "__main__":
-    render_all_patients()
-    print("✅ Visualization complete!")
+    # save_all_slices=True will save all slices (even without tumor)
+    # save_all_slices=False will only save slices with tumor (recommended)
+    visualize_all(save_comparison=True, save_all_slices=False)

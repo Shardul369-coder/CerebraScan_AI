@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 from keras.models import load_model
-from src.losses import dice_coef_multiclass
+from src.losses import dice_coef_multiclass_no_bg,dice_coef_multiclass
 import tensorflow as tf
 from src.config import IMG_SIZE, INPUT_CHANNELS
 
@@ -45,10 +45,14 @@ def run_inference(model_path, test_img_dir, output_dir="predictions_3d"):
     
     # Load model
     print(f"[INFO] Loading model from {model_path}")
+    
     model = load_model(
         model_path,
         compile=False,
-        custom_objects={"dice_coef_multiclass": dice_coef_multiclass}
+        custom_objects={
+            "dice_coef_multiclass": dice_coef_multiclass,
+            "dice_coef_multiclass_no_bg": dice_coef_multiclass_no_bg
+        }
     )
     
     # Verify model is multi-class

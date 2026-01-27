@@ -8,47 +8,49 @@ def load_npy(img_path, mask_path):
     img_path = img_path.decode("utf-8")
     mask_path = mask_path.decode("utf-8")
 
-    # Load data with numpy
+    # Load data
     img = np.load(img_path).astype(np.float32)  # (H, W, 4)
-    mask = np.load(mask_path)  # (H, W)
+    mask = np.load(mask_path).astype(np.int32)  # (H, W)
     
     # Handle mask - ensure it's 2D
     mask = np.squeeze(mask)
     if mask.ndim != 2:
-        # Handle any dimension issues
         if mask.ndim == 3:
             mask = mask[:, :, 0]
-        elif mask.ndim == 1:
-            mask = mask.reshape(int(np.sqrt(len(mask))), -1)
     
-    # Convert to binary (0 or 1)
-    mask = (mask > 0).astype(np.int32)
+    # DON'T remap here - preprocessing already did it
+    # Just ensure it's in range 0-3
+    mask = np.clip(mask, 0, 3)
     
     # Get target size
     H_target, W_target = IMG_SIZE
     H_orig, W_orig = mask.shape
     
-    # Simple resize using numpy
-    # Create coordinate grids for resizing
+    # Simple resize
     y_coords = np.linspace(0, H_orig-1, H_target).astype(np.int32)
     x_coords = np.linspace(0, W_orig-1, W_target).astype(np.int32)
     
-    # Resize mask (nearest neighbor)
+    # Resize mask
     mask_resized = mask[y_coords[:, None], x_coords[None, :]]
     
-    # Resize image (simple indexing - nearest neighbor)
+    # Resize image
     img_resized = img[y_coords[:, None], x_coords[None, :], :]
     
-    # Normalize image
-    img_normalized = (img_resized - np.mean(img_resized)) / (np.std(img_resized) + 1e-8)
+    # Normalize each channel separately
+    for c in range(4):
+        channel = img_resized[:, :, c]
+        mean = np.mean(channel)
+        std = np.std(channel)
+        if std > 1e-6:
+            img_resized[:, :, c] = (channel - mean) / (std + 1e-8)
     
     # One-hot encode mask
     mask_onehot = np.zeros((H_target, W_target, NUM_CLASSES), dtype=np.float32)
     for c in range(NUM_CLASSES):
         mask_onehot[:, :, c] = (mask_resized == c).astype(np.float32)
     
-    return img_normalized.astype(np.float32), mask_onehot.astype(np.float32)
-
+    return img_resized.astype(np.float32), mask_onehot.astype(np.float32)
+    
 
 def get_dataset(split="Train", return_len=False):
     """
