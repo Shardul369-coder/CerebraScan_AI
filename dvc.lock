@@ -28,112 +28,112 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 781549fe8fb88b520dbe624a6d720832
-      size: 312
+      md5: 93045efc2b82e46e211ec409e47a0b57
+      size: 155
       isexec: true
     - path: processed_data/
       hash: md5
-      md5: a807e2ba557b2dccd22bc355f196f122.dir
-      size: 74010555136
-      nfiles: 128462
+      md5: a03e99984c8adc5b93006efa69602de1.dir
+      size: 7056415744
+      nfiles: 12248
     - path: src/Model_seg.py
       hash: md5
-      md5: 93f20076168e4bc6c97c21c61a7b903e
-      size: 5252
+      md5: bb8817eb1acf9261a0f869a6dc32f0f0
+      size: 6036
       isexec: true
     - path: src/data.py
       hash: md5
-      md5: 620de3251f75b48748027f7a21c9de57
-      size: 3716
+      md5: 850b68cc316cc4f9d057e89fe3fe4216
+      size: 3678
       isexec: true
     - path: src/losses.py
       hash: md5
-      md5: 79a1fbb77a9260ec77f167e832ff9d18
-      size: 4804
+      md5: 6a1876e92f631639423cdec67a80dc3b
+      size: 7909
       isexec: true
     params:
       params.yaml:
         model_seg:
           IMG_SIZE:
-          - 240
-          - 240
+          - 128
+          - 128
           INPUT_CHANNELS: 4
           NUM_CLASSES: 4
           LEARNING_RATE: 0.0001
-          EPOCHS: 50
-          BATCH_SIZE: 1
+          EPOCHS: 60
+          BATCH_SIZE: 4
     outs:
     - path: checkpoints/seg_best.h5
       hash: md5
-      md5: 3abd777ea57c68d13bf7a6f25d9e710d
-      size: 23710208
+      md5: 9fe10e31be1d8051e407ddfbd2fd815a
+      size: 23710160
       isexec: true
   evaluate:
     cmd: PYTHONPATH=. python3.11 src/model_evaluation.py
     deps:
     - path: checkpoints/seg_best.h5
       hash: md5
-      md5: 3abd777ea57c68d13bf7a6f25d9e710d
-      size: 23710208
+      md5: 9fe10e31be1d8051e407ddfbd2fd815a
+      size: 23710160
       isexec: true
     - path: processed_data/
       hash: md5
-      md5: a807e2ba557b2dccd22bc355f196f122.dir
-      size: 74010555136
-      nfiles: 128462
+      md5: a03e99984c8adc5b93006efa69602de1.dir
+      size: 7056415744
+      nfiles: 12248
     - path: src/data.py
       hash: md5
-      md5: 620de3251f75b48748027f7a21c9de57
-      size: 3716
+      md5: 850b68cc316cc4f9d057e89fe3fe4216
+      size: 3678
       isexec: true
     - path: src/losses.py
       hash: md5
-      md5: 79a1fbb77a9260ec77f167e832ff9d18
-      size: 4804
+      md5: 6a1876e92f631639423cdec67a80dc3b
+      size: 7909
       isexec: true
     - path: src/model_evaluation.py
       hash: md5
-      md5: 92daee3238945349b96bcffd4a9c47ef
-      size: 2291
+      md5: 9f90108f6b3677e8c85657debac4e97a
+      size: 2787
       isexec: true
     outs:
     - path: test_metrics.json
       hash: md5
-      md5: 94f5934d5e84e95906c7086a8d2130b1
-      size: 86
+      md5: 0c7a21991916c07724847d215f867e50
+      size: 138
       isexec: true
   inference:
     cmd: PYTHONPATH=. python3.11 src/predict_and_stack.py
     deps:
     - path: checkpoints/seg_best.h5
       hash: md5
-      md5: 3abd777ea57c68d13bf7a6f25d9e710d
-      size: 23710208
+      md5: 9fe10e31be1d8051e407ddfbd2fd815a
+      size: 23710160
       isexec: true
     - path: processed_data/Test_data/
       hash: md5
-      md5: 62b66507bd317352b53c73d233a59223.dir
-      size: 7217731584
-      nfiles: 12528
+      md5: 57a0822e5e07bd8a9a3302d50ee24323.dir
+      size: 738596096
+      nfiles: 1282
     - path: src/predict_and_stack.py
       hash: md5
-      md5: 0ca886b34e4682dcd4ec51393a816ea3
-      size: 5391
+      md5: baa636acc7ee93a54380be4c342f775c
+      size: 5515
       isexec: true
     outs:
     - path: predictions_3d/
       hash: md5
-      md5: 80501f33d9ab4489ba569d546675762d.dir
-      size: 8659379200
-      nfiles: 200
+      md5: 72c339c2fc58323a23ee3adcbb782de6.dir
+      size: 252054016
+      nfiles: 20
   export_nifti:
     cmd: python3.11 src/export_nifti.py
     deps:
     - path: predictions_3d/
       hash: md5
-      md5: 80501f33d9ab4489ba569d546675762d.dir
-      size: 8659379200
-      nfiles: 200
+      md5: 72c339c2fc58323a23ee3adcbb782de6.dir
+      size: 252054016
+      nfiles: 20
     - path: src/export_nifti.py
       hash: md5
       md5: 0158b9ae68379c05540ef740059ccc9f
@@ -142,30 +142,30 @@ stages:
     outs:
     - path: nifti_outputs/
       hash: md5
-      md5: c4358346b56bbbeab21eb72f44e4beff.dir
-      size: 7890995
-      nfiles: 200
+      md5: 340e8cabf4ab6409009ce6d7cff1065d.dir
+      size: 669736
+      nfiles: 20
   visualize:
     cmd: python3.11 src/render_3d.py
     deps:
     - path: predictions_3d/
       hash: md5
-      md5: 80501f33d9ab4489ba569d546675762d.dir
-      size: 8659379200
-      nfiles: 200
+      md5: 72c339c2fc58323a23ee3adcbb782de6.dir
+      size: 252054016
+      nfiles: 20
     - path: src/render_3d.py
       hash: md5
-      md5: 63a613f0afe4e19a061bde2715f0f06e
-      size: 5299
+      md5: 9bc8501060f2327d21eeb9e96d1c1171
+      size: 4137
       isexec: true
     params:
       params.yaml:
         model_seg.IMG_SIZE:
-        - 240
-        - 240
+        - 128
+        - 128
     outs:
     - path: visualizations/
       hash: md5
-      md5: 3d19e9eabd707c44e1512c10251ee10f.dir
-      size: 49435387
-      nfiles: 1340
+      md5: d9e741f969086c10d7bb1bf7737c30ec.dir
+      size: 706119
+      nfiles: 50
