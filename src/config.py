@@ -7,7 +7,7 @@ params = yaml.load(open("params.yaml"))["model_seg"]
 PROCESSED_DATA_DIR = Path("processed_data")
 RAW_DATA_DIR = Path("data/raw")
 
-IMG_SIZE = tuple(params["IMG_SIZE"])        # <--- FIX HERE
+IMG_SIZE = tuple(params["IMG_SIZE"])        
 INPUT_CHANNELS = params["INPUT_CHANNELS"]
 NUM_CLASSES = params["NUM_CLASSES"]
 BATCH_SIZE = params["BATCH_SIZE"]
