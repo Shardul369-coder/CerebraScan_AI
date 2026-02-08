@@ -13,7 +13,7 @@ venv_medai/
 # processed/
 # processed_data/
 
-# Raw data directory (DVC manages contents)
+# Raw data directory (DVC managed contents)
 raw_data
 raw_data/
 .vscode
