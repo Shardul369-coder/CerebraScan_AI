@@ -1,0 +1,5 @@
+{
+    "test_mean_dice": 0.8083191341865137,
+    "test_mean_dice_tumor_only": 0.7453103604153817,
+    "test_mean_iou": 0.7226913581972443
+}
