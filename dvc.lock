@@ -28,14 +28,14 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 93045efc2b82e46e211ec409e47a0b57
-      size: 155
+      md5: ae96f642c62a09e5382f4c07e85aa8fc
+      size: 143
       isexec: true
     - path: processed_data/
       hash: md5
-      md5: a03e99984c8adc5b93006efa69602de1.dir
-      size: 7056415744
-      nfiles: 12248
+      md5: 17c8ffec78bf6cc1361f10f112dad6cc.dir
+      size: 7072547328
+      nfiles: 12276
     - path: src/Model_seg.py
       hash: md5
       md5: bb8817eb1acf9261a0f869a6dc32f0f0
@@ -55,32 +55,30 @@ stages:
       params.yaml:
         model_seg:
           IMG_SIZE:
-          - 128
-          - 128
+          - 240
+          - 240
           INPUT_CHANNELS: 4
           NUM_CLASSES: 4
           LEARNING_RATE: 0.0001
-          EPOCHS: 60
+          EPOCHS: 70
           BATCH_SIZE: 4
     outs:
     - path: checkpoints/seg_best.h5
       hash: md5
-      md5: 9fe10e31be1d8051e407ddfbd2fd815a
-      size: 23710160
-      isexec: true
+      md5: cf283626ca80360d9f84d7a2c695f2d4
+      size: 23710208
   evaluate:
     cmd: PYTHONPATH=. python3.11 src/model_evaluation.py
     deps:
     - path: checkpoints/seg_best.h5
       hash: md5
-      md5: 9fe10e31be1d8051e407ddfbd2fd815a
-      size: 23710160
-      isexec: true
+      md5: cf283626ca80360d9f84d7a2c695f2d4
+      size: 23710208
     - path: processed_data/
       hash: md5
-      md5: a03e99984c8adc5b93006efa69602de1.dir
-      size: 7056415744
-      nfiles: 12248
+      md5: 17c8ffec78bf6cc1361f10f112dad6cc.dir
+      size: 7072547328
+      nfiles: 12276
     - path: src/data.py
       hash: md5
       md5: 850b68cc316cc4f9d057e89fe3fe4216
@@ -99,73 +97,71 @@ stages:
     outs:
     - path: test_metrics.json
       hash: md5
-      md5: 0c7a21991916c07724847d215f867e50
+      md5: 0b2df94ab2b3b510930d2eee7f6ec1d8
       size: 138
-      isexec: true
   inference:
     cmd: PYTHONPATH=. python3.11 src/predict_and_stack.py
     deps:
     - path: checkpoints/seg_best.h5
       hash: md5
-      md5: 9fe10e31be1d8051e407ddfbd2fd815a
-      size: 23710160
-      isexec: true
+      md5: cf283626ca80360d9f84d7a2c695f2d4
+      size: 23710208
     - path: processed_data/Test_data/
       hash: md5
-      md5: 57a0822e5e07bd8a9a3302d50ee24323.dir
-      size: 738596096
-      nfiles: 1282
+      md5: 1532e1432e5bb1fbacbda79358b9eafd.dir
+      size: 732834816
+      nfiles: 1272
     - path: src/predict_and_stack.py
       hash: md5
-      md5: baa636acc7ee93a54380be4c342f775c
-      size: 5515
+      md5: ee79ce6208ccf12c5b2f649ad0e7cb20
+      size: 5681
       isexec: true
     outs:
     - path: predictions_3d/
       hash: md5
-      md5: 72c339c2fc58323a23ee3adcbb782de6.dir
-      size: 252054016
+      md5: 4eb791ce6442e33b5ed8e4233f693a50.dir
+      size: 879208960
       nfiles: 20
   export_nifti:
     cmd: python3.11 src/export_nifti.py
     deps:
     - path: predictions_3d/
       hash: md5
-      md5: 72c339c2fc58323a23ee3adcbb782de6.dir
-      size: 252054016
+      md5: 4eb791ce6442e33b5ed8e4233f693a50.dir
+      size: 879208960
       nfiles: 20
     - path: src/export_nifti.py
       hash: md5
-      md5: 0158b9ae68379c05540ef740059ccc9f
-      size: 931
+      md5: 95875422ca032516b8be85de0be67d80
+      size: 961
       isexec: true
     outs:
     - path: nifti_outputs/
       hash: md5
-      md5: 340e8cabf4ab6409009ce6d7cff1065d.dir
-      size: 669736
+      md5: 1157379ada9c13247bcad844b36e91f2.dir
+      size: 1730932
       nfiles: 20
   visualize:
     cmd: python3.11 src/render_3d.py
     deps:
     - path: predictions_3d/
       hash: md5
-      md5: 72c339c2fc58323a23ee3adcbb782de6.dir
-      size: 252054016
+      md5: 4eb791ce6442e33b5ed8e4233f693a50.dir
+      size: 879208960
       nfiles: 20
     - path: src/render_3d.py
       hash: md5
-      md5: 9bc8501060f2327d21eeb9e96d1c1171
-      size: 4137
+      md5: b8474a37ee645363a38581de52cc2206
+      size: 15081
       isexec: true
     params:
       params.yaml:
         model_seg.IMG_SIZE:
-        - 128
-        - 128
+        - 240
+        - 240
     outs:
     - path: visualizations/
       hash: md5
-      md5: d9e741f969086c10d7bb1bf7737c30ec.dir
-      size: 706119
-      nfiles: 50
+      md5: f80ba4b308d0447f1318273148f01648.dir
+      size: 1549071284
+      nfiles: 2802
