@@ -5,7 +5,7 @@ import zipfile
 
 router = APIRouter()
 
-UPLOAD_DIR = Path("backend/storage/uploads")
+UPLOAD_DIR = Path("raw_data")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
