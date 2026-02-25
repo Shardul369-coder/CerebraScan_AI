@@ -25,3 +25,4 @@ Project_flow.txt
 /predictions_3d
 /nifti_outputs
 checkpoints
+backend/storage/
