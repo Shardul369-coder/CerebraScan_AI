@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 
 from backend.routes.upload  import router as upload_router
 from backend.routes.analyze import router as analyze_router
-from backend.routes.results import router as results_router
+from backend.routes.visualization import router as visualization_router
 from backend.models.schemas import HealthResponse
 from backend.services.segmentation import is_model_available
 
@@ -70,8 +70,7 @@ app.add_middleware(
 # ── Routers ────────────────────────────────────────────────────────────────────
 app.include_router(upload_router)
 app.include_router(analyze_router)
-app.include_router(results_router)
-
+app.include_router(visualization_router)
 
 # ── Health & root ──────────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"], summary="Root")

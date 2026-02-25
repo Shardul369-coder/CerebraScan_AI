@@ -1,23 +1,23 @@
-import shutil
 from pathlib import Path
+import shutil
 
-DEST_DIR = Path("processed_data/Test_data/Images")
+from src.convert_backend import convert_case
+
+BASE_DIR = Path("backend/storage/images")
 
 
 def prepare_for_inference(case_id, upload_dir):
 
-    DEST_DIR.mkdir(parents=True, exist_ok=True)
+    case_dest = BASE_DIR / case_id
 
-    copied = []
+    if case_dest.exists():
+        shutil.rmtree(case_dest)
 
-    # copy all .npy slices
-    for f in Path(upload_dir).glob("*.npy"):
-        target = DEST_DIR / f.name
-        shutil.copy(f, target)
-        copied.append(str(target))
+    case_dest.mkdir(parents=True, exist_ok=True)
+
+    convert_case(upload_dir, case_dest)
 
     return {
         "status": "ready",
-        "total_files": len(copied),
-        "destination": str(DEST_DIR)
+        "destination": str(case_dest),
     }
