@@ -9,9 +9,6 @@ warnings.filterwarnings('ignore')
 
 # ======== CONFIGURATION ========
 MRI_MODALITY = "flair"  # Can also try "t1ce", "t1", "t2"
-PRED_DIR = Path("predictions_3d")
-OUTPUT_DIR = Path("visualizations")
-RAW_DATA_DIR = Path("raw_data")
 
 # High resolution settings
 DPI = 300
@@ -94,27 +91,30 @@ def load_prediction(pred_file):
         print(f"  [ERROR] Failed to load prediction: {e}")
         return None
 
-def load_all_mri_modalities(patient_id):
-    """Load all available MRI modalities and return the best one"""
-    # Remove _slice suffix if present
-    clean_id = patient_id.replace("_slice", "")
-    
-    patient_dir = RAW_DATA_DIR / clean_id
+def load_all_mri_modalities(raw_data_dir):
+    """
+    Backend version:
+    MRI files are directly inside:
+    backend/storage/uploads/<case_id>/
+    """
+
+    patient_dir = Path(raw_data_dir)
+
     if not patient_dir.exists():
         print(f"  [ERROR] MRI folder not found: {patient_dir}")
         return None
-    
+
     print(f"  Scanning folder: {patient_dir}")
-    
-    # Look for all NIfTI files
+
     nii_files = {}
+
     for f in patient_dir.iterdir():
         if f.suffix in [".nii", ".gz"] or f.name.endswith(".nii.gz"):
-            # Identify modality from filename
             fname_lower = f.name.lower()
+
             if 'flair' in fname_lower:
                 nii_files['flair'] = f
-            elif 't1ce' in fname_lower or 't1-ce' in fname_lower:
+            elif 't1ce' in fname_lower:
                 nii_files['t1ce'] = f
             elif 't2' in fname_lower:
                 nii_files['t2'] = f
@@ -123,56 +123,32 @@ def load_all_mri_modalities(patient_id):
             elif 'seg' not in fname_lower:  # Skip segmentation files
                 nii_files['other'] = f
             print(f"    Found: {f.name}")
-    
+
     if not nii_files:
         print(f"  [ERROR] No NIfTI files found in {patient_dir}")
         return None
-    
-    # Try modalities in preferred order
-    modality_priority = ['flair', 't1ce', 't2', 't1', 'other']
-    
+
+    modality_priority = ['flair', 't1ce', 't2', 't1','other']
+
     for modality in modality_priority:
         if modality in nii_files:
             load_file = nii_files[modality]
             print(f"  → Loading MRI ({modality}): {load_file.name}")
-            
+
             try:
                 vol = nib.load(str(load_file)).get_fdata()
-                print(f"  → Raw MRI range: [{vol.min():.2f}, {vol.max():.2f}]")
-                print(f"  → Raw MRI shape: {vol.shape}")
-                
-                # Check if volume has data
-                if vol.max() == 0 or np.all(vol == 0):
-                    print(f"  [WARNING] {modality} volume is all zeros, trying next modality...")
-                    continue
-                
-                # Check if volume has enough non-zero data
-                non_zero_ratio = np.sum(vol > 0) / vol.size
-                if non_zero_ratio < 0.01:  # Less than 1% non-zero
-                    print(f"  [WARNING] {modality} has insufficient data ({non_zero_ratio*100:.2f}% non-zero), trying next...")
-                    continue
-                
-                # Normalize volume for better visualization
-                # Use percentile-based normalization
-                non_zero_vals = vol[vol > 0]
-                if len(non_zero_vals) > 0:
-                    p1, p99 = np.percentile(non_zero_vals, [1, 99])
-                    vol = np.clip(vol, p1, p99)
-                    vol = (vol - p1) / (p99 - p1 + 1e-8)
-                else:
-                    # Fallback to simple normalization
-                    vol = (vol - vol.min()) / (vol.max() - vol.min() + 1e-8)
-                
-                print(f"  → Normalized MRI range: [{vol.min():.2f}, {vol.max():.2f}]")
-                print(f"  ✓ Successfully loaded {modality}: {vol.shape}, slices={vol.shape[2]}")
-                
+
+                # simple normalization (safer for backend)
+                vol = (vol - vol.min()) / (vol.max() - vol.min() + 1e-8)
+
+                print(f"  ✓ Loaded MRI: {vol.shape}")
                 return vol
-                
+
             except Exception as e:
                 print(f"  [ERROR] Failed to load {modality}: {e}")
                 continue
-    
-    print(f"  [ERROR] Could not load any valid MRI modality")
+
+    print("  [ERROR] Could not load any MRI modality")
     return None
 
 # ======== SAVE HELPERS ========
@@ -283,14 +259,14 @@ def create_legend_image(output_dir):
 
 # ======== MAIN VISUALIZATION ========
 
-def visualize_patient(patient_id, pred_file, save_comparison=True, save_all_slices=False):
+def visualize_patient(patient_id,pred_file,output_dir,raw_data_dir,save_comparison=True,save_all_slices=False):
     """Generate overlay visualizations"""
     print("\n" + "="*60)
     print(f"VISUALIZING: {patient_id}")
     print("="*60)
 
     # Create output directory
-    out_dir = OUTPUT_DIR / patient_id
+    out_dir = Path(output_dir) / patient_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Create legend
@@ -302,7 +278,7 @@ def visualize_patient(patient_id, pred_file, save_comparison=True, save_all_slic
         return
 
     # Load MRI (try all modalities)
-    mri_vol = load_all_mri_modalities(patient_id)
+    mri_vol = load_all_mri_modalities(raw_data_dir)
     if mri_vol is None:
         print("  [ERROR] Cannot create overlays without valid MRI data")
         return
