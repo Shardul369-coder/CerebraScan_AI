@@ -1,0 +1,24 @@
+{
+    "case_id": "1644011c-01c9-4e5e-aad5-eedf93e4c09e",
+    "status": "completed",
+    "mask_path": "backend/storage/masks/1644011c-01c9-4e5e-aad5-eedf93e4c09e/BraTS-GLI-00104-000_slice_3d.npy",
+    "nifti_path": "nifti_outputs/BraTS-GLI-00104-000_slice_3d.nii.gz",
+    "volumetric_analysis": {
+        "NET_voxels": 3812,
+        "NET_mm3": 3812.0,
+        "NET_cm3": 3.81,
+        "Edema_voxels": 47771,
+        "Edema_mm3": 47771.0,
+        "Edema_cm3": 47.77,
+        "ET_voxels": 32220,
+        "ET_mm3": 32220.0,
+        "ET_cm3": 32.22,
+        "Whole_Tumor_mm3": 83803.0,
+        "Whole_Tumor_cm3": 83.8,
+        "Tumor_Core_mm3": 36032.0,
+        "Tumor_Core_cm3": 36.03,
+        "NET_percent": 4.55,
+        "Edema_percent": 57.0,
+        "ET_percent": 38.45
+    }
+}
