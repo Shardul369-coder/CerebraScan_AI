@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-router = APIRouter(prefix="/visualizations", tags=["Visualizations"])
+router = APIRouter(prefix="/visualization", tags=["Visualization"])
 
 VIS_DIR = Path("backend/storage/visualizations")
 
@@ -21,7 +21,7 @@ def list_visualizations(case_id: str):
             detail=f"No visualizations found for {case_id}"
         )
 
-    images = sorted([f.name for f in case_dir.glob("*.jpg")])
+    images = sorted([f.name for f in case_dir.glob("*.png")])
 
     return {
         "case_id": case_id,
