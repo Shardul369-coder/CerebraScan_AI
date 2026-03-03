@@ -71,15 +71,23 @@ def evaluate_model(model_path="checkpoints/seg_best.h5", output_path="test_metri
         "test_mean_iou": float(np.mean(iou_scores))
     }
 
-    with open(output_path, "w") as f:
-        json.dump(results, f, indent=4)
-
-    print("===== TEST METRICS =====")
-    print(f"Mean Dice (all):   {results['test_mean_dice']:.4f}")
-    print(f"Mean Dice (tumor): {results['test_mean_dice_tumor_only']:.4f}")  # ADD THIS
-    print(f"Mean IoU:          {results['test_mean_iou']:.4f}")
-    print("========================")
-
+    print("\n" + "="*50)
+    print("TEST METRICS")
+    print("="*50)
+    print(f"Mean Dice (all classes):  {results['test_mean_dice']:.4f}")
+    print(f"Mean Dice (tumor only):   {results['test_mean_dice_tumor_only']:.4f}  ← KEY METRIC")
+    print(f"Mean IoU:                 {results['test_mean_iou']:.4f}")
+    print("="*50 + "\n")
+    
+    # Diagnostic message
+    if results['test_mean_dice_tumor_only'] >= 0.60:
+        print("✅ EXCELLENT tumor segmentation!")
+    elif results['test_mean_dice_tumor_only'] >= 0.50:
+        print("✅ GOOD tumor segmentation")
+    elif results['test_mean_dice_tumor_only'] >= 0.40:
+        print("⚠️  FAIR tumor segmentation - room for improvement")
+    else:
+        print("⚠️  POOR tumor segmentation - check training")
     return results
 
 if __name__ == "__main__":

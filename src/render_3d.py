@@ -266,7 +266,7 @@ def visualize_patient(patient_id,pred_file,output_dir,raw_data_dir,save_comparis
     print("="*60)
 
     # Create output directory
-    out_dir = Path(output_dir) / patient_id
+    out_dir = Path(output_dir) 
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Create legend
