@@ -2,13 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CerebraScan AI</title>
+    <title>CerebraScan AI - Clinical Neuroimaging Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <link rel="stylesheet" href="/static/style.css">
 
@@ -21,6 +20,178 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/PLYLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     
+    <style>
+        /* Additional inline styles for dashboard */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #334155;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+            border-color: #3b82f6;
+        }
+        
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+        
+        .kpi-icon {
+            font-size: 1.8rem;
+        }
+        
+        .kpi-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .kpi-title {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+        
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 5px 0;
+            line-height: 1.2;
+        }
+        
+        .kpi-value span {
+            font-size: 1rem;
+            color: #6b7280;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+        
+        .kpi-footer {
+            display: flex;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 10px;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .chart-card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #334155;
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .chart-header h3 {
+            color: #e2e8f0;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .chart-subtitle {
+            color: #6b7280;
+            font-size: 0.8rem;
+        }
+        
+        .legend-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+        
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        /* Opacity controls grid */
+        .opacity-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 12px;
+        }
+        
+        .opacity-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .opacity-item label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .opacity-item input {
+            width: 100%;
+        }
+        
+        .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
 
@@ -28,7 +199,7 @@
 
     <!-- Sidebar -->
     <aside class="sidebar">
-        <h2><i class="fas fa-brain"></i> CerebraScan</h2>
+        <h2><i class="fas fa-brain"></i> CerebraScan<span style="color:#3b82f6; font-size:0.7rem; margin-left:4px;">AI</span></h2>
 
         <ul>
             <li data-tab="dashboard" class="active">
@@ -53,127 +224,214 @@
 
         <div class="sidebar-footer">
             <span class="status-dot"></span> Pipeline Ready
+            <span style="margin-left:auto; font-size:0.7rem; color:#3b82f6;">v2.0</span>
         </div>
     </aside>
 
     <!-- Main -->
     <main class="content">
 
-        <!-- Dashboard -->
+        <!-- ==================== DASHBOARD PANEL ==================== -->
         <section id="panel-dashboard" class="panel active">
-            <h1>Dashboard</h1>
+            <h1><i class="fas fa-chart-pie" style="color:#3b82f6; margin-right:10px;"></i>Clinical Dashboard</h1>
 
-            <div class="grid">
-
-                <div class="card">
-                    <i class="fas fa-brain card-icon"></i>
-                    <h3>Whole Tumor Volume</h3>
-                    <p id="wholeVolume">—</p>
+            <!-- KPI Cards Grid -->
+            <div class="kpi-grid">
+                <!-- Whole Tumor -->
+                <div class="kpi-card" style="border-left: 4px solid #8b5cf6;">
+                    <div class="kpi-header">
+                        <i class="fas fa-brain kpi-icon" style="color:#8b5cf6;"></i>
+                        <span class="kpi-badge" style="background:#8b5cf6; color:white;">WT</span>
+                    </div>
+                    <div class="kpi-title">Whole Tumor Volume</div>
+                    <div class="kpi-value" id="wholeVolume">— <span>cm³</span></div>
+                    <div class="kpi-footer">
+                        <span><span style="color:#8b5cf6;">⬤</span> All regions</span>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <i class="fas fa-dna card-icon"></i>
-                    <h3>Tumor Core Volume</h3>
-                    <p id="coreVolume">—</p>
+                <!-- Tumor Core -->
+                <div class="kpi-card" style="border-left: 4px solid #f59e0b;">
+                    <div class="kpi-header">
+                        <i class="fas fa-dot-circle kpi-icon" style="color:#f59e0b;"></i>
+                        <span class="kpi-badge" style="background:#f59e0b; color:white;">TC</span>
+                    </div>
+                    <div class="kpi-title">Tumor Core Volume</div>
+                    <div class="kpi-value" id="coreVolume">— <span>cm³</span></div>
+                    <div class="kpi-footer">
+                        <span><span style="color:#3b82f6;">⬤</span> NET</span>
+                        <span><span style="color:#f59e0b;">⬤</span> ET</span>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <h3>Tumor Composition (%)</h3>
-                    <canvas id="compositionChart"></canvas>
+                <!-- Edema -->
+                <div class="kpi-card" style="border-left: 4px solid #10b981;">
+                    <div class="kpi-header">
+                        <i class="fas fa-water kpi-icon" style="color:#10b981;"></i>
+                        <span class="kpi-badge" style="background:#10b981; color:white;">ED</span>
+                    </div>
+                    <div class="kpi-title">Edema Volume</div>
+                    <div class="kpi-value" id="edemaVolume">— <span>cm³</span></div>
+                    <div class="kpi-footer">
+                        <span><span style="color:#10b981;">⬤</span> Peritumoral</span>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <h3>Volume Breakdown (cm³)</h3>
-                    <canvas id="volumeChart"></canvas>
+                <!-- Enhancing Tumor -->
+                <div class="kpi-card" style="border-left: 4px solid #ef4444;">
+                    <div class="kpi-header">
+                        <i class="fas fa-fire kpi-icon" style="color:#ef4444;"></i>
+                        <span class="kpi-badge" style="background:#ef4444; color:white;">ET</span>
+                    </div>
+                    <div class="kpi-title">Enhancing Tumor</div>
+                    <div class="kpi-value" id="etVolume">— <span>cm³</span></div>
+                    <div class="kpi-footer">
+                        <span><span style="color:#ef4444;">⬤</span> Active tumor</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <!-- Composition Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-pie" style="color:#3b82f6; margin-right:8px;"></i>Tumor Composition</h3>
+                        <span class="chart-subtitle">% of whole tumor</span>
+                    </div>
+                    <div style="height:250px;">
+                        <canvas id="compositionChart"></canvas>
+                    </div>
+                    <div class="legend-row">
+                        <div class="legend-item"><span class="legend-color" style="background:#3b82f6;"></span> NET: <span id="netPercent">—</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#10b981;"></span> Edema: <span id="edemaPercent">—</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#f59e0b;"></span> ET: <span id="etPercent">—</span></div>
+                    </div>
                 </div>
 
+                <!-- Volume Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-bar" style="color:#3b82f6; margin-right:8px;"></i>Volume Breakdown</h3>
+                        <span class="chart-subtitle">cubic centimeters (cm³)</span>
+                    </div>
+                    <div style="height:250px;">
+                        <canvas id="volumeChart"></canvas>
+                    </div>
+                    <div class="stats-row">
+                        <span>Total: <strong id="totalVolume">—</strong></span>
+                        <span>Core: <strong id="coreVolumeSmall">—</strong></span>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Upload -->
+        <!-- ==================== UPLOAD PANEL ==================== -->
         <section id="panel-upload" class="panel">
-            <h1>Upload MRI</h1>
+            <h1><i class="fas fa-cloud-upload-alt" style="color:#3b82f6; margin-right:10px;"></i>Upload MRI</h1>
 
             <div class="card upload-card">
                 <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                <p>Select T1, T1CE, T2, FLAIR</p>
+                <p>Select T1, T1CE, T2, FLAIR modalities</p>
 
                 <input type="file" id="fileInput" multiple>
                 <button id="uploadBtn" class="primary">Upload</button>
 
-                <div id="uploadStatus"></div>
+                <div id="uploadStatus" style="margin-top:15px; color:#94a3b8;"></div>
             </div>
         </section>
 
-        <!-- Segmentation -->
+        <!-- ==================== SEGMENTATION PANEL ==================== -->
         <section id="panel-segment" class="panel">
-            <h1>Segmentation</h1>
+            <h1><i class="fas fa-layer-group" style="color:#3b82f6; margin-right:10px;"></i>Segmentation</h1>
 
             <div class="card">
-                <button id="segmentBtn" class="primary">
-                    <i class="fas fa-play"></i> Run Segmentation
-                </button>
+                <div style="display:flex; gap:15px; margin-bottom:20px;">
+                    <button id="segmentBtn" class="primary">
+                        <i class="fas fa-play"></i> Run Segmentation
+                    </button>
 
-                <button id="downloadBtn" class="secondary">
-                    Download Visualization ZIP
-                </button>
-
-                <div id="terminal"></div>
-            </div>
-        </section>
-
-        <!-- 3D Viewer -->
-        <section id="panel-viewer" class="panel">
-            <h1>3D Brain Simulation</h1>
-
-            <div class="card">
-
-                <div style="margin-bottom:20px;">
-                    <label>NET Opacity</label>
-                    <input type="range" id="netOpacity" min="0" max="1" step="0.05" value="1">
-
-                    <label>Edema Opacity</label>
-                    <input type="range" id="edemaOpacity" min="0" max="1" step="0.05" value="1">
-
-                    <label>ET Opacity</label>
-                    <input type="range" id="etOpacity" min="0" max="1" step="0.05" value="1">
+                    <button id="downloadBtn" class="secondary">
+                        <i class="fas fa-download"></i> Download Visualization ZIP
+                    </button>
                 </div>
 
-                <div id="viewer3d" style="height:600px;"></div>
-
+                <div id="terminal" style="height:300px; overflow-y:auto; background:#0f172a; border-radius:8px; padding:15px; font-family:monospace; color:#22c55e;"></div>
             </div>
         </section>
 
-        <!-- Radiogenomics -->
-        <section id="panel-radiogenomics" class="panel">
-            <h1>Radiogenomics</h1>
+        <!-- ==================== 3D VIEWER PANEL ==================== -->
+        <section id="panel-viewer" class="panel">
+            <h1><i class="fas fa-cube" style="color:#3b82f6; margin-right:10px;"></i>3D Brain Simulation</h1>
 
             <div class="card">
-                <button id="radioBtn" class="secondary">
+                <!-- Opacity Controls Grid -->
+                <div class="opacity-grid">
+                    <div class="opacity-item">
+                        <label><span class="color-dot" style="background:#3b82f6;"></span> NET</label>
+                        <input type="range" id="netOpacity" min="0" max="1" step="0.05" value="1">
+                    </div>
+                    <div class="opacity-item">
+                        <label><span class="color-dot" style="background:#10b981;"></span> Edema</label>
+                        <input type="range" id="edemaOpacity" min="0" max="1" step="0.05" value="0.8">
+                    </div>
+                    <div class="opacity-item">
+                        <label><span class="color-dot" style="background:#f59e0b;"></span> ET</label>
+                        <input type="range" id="etOpacity" min="0" max="1" step="0.05" value="1">
+                    </div>
+                    <div class="opacity-item">
+                        <label><span class="color-dot" style="background:#88aaff;"></span> Brain</label>
+                        <input type="range" id="brainOpacity" min="0" max="1" step="0.05" value="0.15">
+                    </div>
+                </div>
+
+                <!-- 3D Viewer Container -->
+                <div id="viewer3d" style="height:550px; border-radius:12px; overflow:hidden; background:#0f172a;"></div>
+                
+                <!-- Hover Info Display -->
+                <div id="hover-coordinates" style="margin-top:15px; padding:10px; background:#0f172a; border-radius:8px; color:#94a3b8; text-align:center; font-size:0.9rem; border:1px solid #334155;">
+                    <i class="fas fa-info-circle" style="color:#3b82f6; margin-right:5px;"></i> Hover over tumor regions to see details
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== RADIOGENOMICS PANEL ==================== -->
+        <section id="panel-radiogenomics" class="panel">
+            <h1><i class="fas fa-dna" style="color:#3b82f6; margin-right:10px;"></i>Radiogenomics</h1>
+
+            <div class="card">
+                <button id="radioBtn" class="secondary" style="margin-bottom:20px;">
                     <i class="fas fa-dna"></i> Run Prediction
                 </button>
 
-                <div class="pred-grid">
-                    <div class="pred-box">
-                        <span>IDH Mutation</span>
-                        <strong id="idhResult">—</strong>
+                <div class="pred-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                    <div class="pred-box" style="background:#1e293b; padding:20px; border-radius:12px; text-align:center;">
+                        <span style="color:#94a3b8;">IDH Mutation</span>
+                        <strong id="idhResult" style="display:block; font-size:1.5rem; margin-top:10px; color:#3b82f6;">—</strong>
                     </div>
 
-                    <div class="pred-box">
-                        <span>MGMT Methylation</span>
-                        <strong id="mgmtResult">—</strong>
+                    <div class="pred-box" style="background:#1e293b; padding:20px; border-radius:12px; text-align:center;">
+                        <span style="color:#94a3b8;">MGMT Methylation</span>
+                        <strong id="mgmtResult" style="display:block; font-size:1.5rem; margin-top:10px; color:#10b981;">—</strong>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Report -->
+        <!-- ==================== CLINICAL REPORT PANEL ==================== -->
         <section id="panel-report" class="panel">
-            <h1>Clinical Report</h1>
+            <h1><i class="fas fa-file-medical" style="color:#3b82f6; margin-right:10px;"></i>Clinical Report</h1>
+
             <div class="card">
-                <p>
-                    Structured radiology report will appear here after segmentation.
-                </p>
+                <div style="background:#1e293b; border-radius:12px; padding:25px; border-left:4px solid #3b82f6;">
+                    <p style="color:#94a3b8; line-height:1.6;">
+                        <i class="fas fa-robot" style="color:#3b82f6; margin-right:8px;"></i>
+                        Structured radiology report will appear here after segmentation and analysis.
+                    </p>
+                    <div style="margin-top:20px; padding:15px; background:#0f172a; border-radius:8px; color:#e2e8f0;">
+                        <strong>Findings:</strong> No segmentation data available. Please run segmentation first.
+                    </div>
+                </div>
             </div>
         </section>
 

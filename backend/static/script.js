@@ -17,6 +17,7 @@ let volumeChart = null;
 let netMesh = null;
 let edemaMesh = null;
 let etMesh = null;
+let brainReference = null;
 
 let scene = null;
 let camera = null;
@@ -29,6 +30,63 @@ let hoverInfo = null;
 // Loaders
 let plyLoader = null;
 let gltfLoader = null;
+
+/* ==============================
+   Clear Dashboard (Empty Initial State)
+============================== */
+
+function clearDashboard() {
+    console.log('Clearing dashboard to empty state');
+    
+    // Clear KPI cards
+    const wholeVolumeEl = document.getElementById("wholeVolume");
+    if (wholeVolumeEl) {
+        wholeVolumeEl.innerHTML = '— <span style="font-size:0.9rem; color:#94a3b8;">cm³</span>';
+    }
+    
+    const coreVolumeEl = document.getElementById("coreVolume");
+    if (coreVolumeEl) {
+        coreVolumeEl.innerHTML = '— <span style="font-size:0.9rem; color:#94a3b8;">cm³</span>';
+    }
+    
+    const edemaVolumeEl = document.getElementById("edemaVolume");
+    if (edemaVolumeEl) {
+        edemaVolumeEl.innerHTML = '— <span style="font-size:0.9rem; color:#94a3b8;">cm³</span>';
+    }
+    
+    const etVolumeEl = document.getElementById("etVolume");
+    if (etVolumeEl) {
+        etVolumeEl.innerHTML = '— <span style="font-size:0.9rem; color:#94a3b8;">cm³</span>';
+    }
+    
+    // Clear percentage displays
+    const netPercentEl = document.getElementById("netPercent");
+    const edemaPercentEl = document.getElementById("edemaPercent");
+    const etPercentEl = document.getElementById("etPercent");
+    const totalVolumeEl = document.getElementById("totalVolume");
+    const coreVolumeSmallEl = document.getElementById("coreVolumeSmall");
+
+    if (netPercentEl) netPercentEl.textContent = '—';
+    if (edemaPercentEl) edemaPercentEl.textContent = '—';
+    if (etPercentEl) etPercentEl.textContent = '—';
+    if (totalVolumeEl) totalVolumeEl.textContent = '—';
+    if (coreVolumeSmallEl) coreVolumeSmallEl.textContent = '—';
+    
+    // Destroy existing charts if they exist
+    if (window.compositionChart) {
+        window.compositionChart.destroy();
+        window.compositionChart = null;
+    }
+    if (window.volumeChart) {
+        window.volumeChart.destroy();
+        window.volumeChart = null;
+    }
+    
+    // Clear any stored volumes
+    window.volumes = null;
+    
+    console.log('Dashboard cleared - ready for new data');
+}
 
 /* ==============================
    Navigation
@@ -116,10 +174,19 @@ function streamLogs(caseId) {
             const data = await res.json();
 
             if (data.volumetrics) {
-                updateDashboard(data.volumetrics);
+                updateDashboardWithVolumetrics(data.volumetrics);
+                
+                // Store for 3D viewer
+                window.volumes = data.volumetrics;
+                
+                // Switch to dashboard view
+                document.querySelector('[data-tab="dashboard"]')?.click();
+                
+                // Show success message
+                if (uploadStatus) {
+                    uploadStatus.innerHTML = '<span style="color:#10b981;">✓ Pipeline completed successfully!</span>';
+                }
             }
-
-            document.querySelector('[data-tab="dashboard"]')?.click();
         }
     };
 
@@ -166,66 +233,274 @@ downloadBtn?.addEventListener("click", () => {
 });
 
 /* ==============================
-   Dashboard Charts
+   Load Dashboard Data from Your JSON Structure
 ============================== */
 
-function updateDashboard(volumes) {
-
-    if (!volumes) return;
-
-    document.getElementById("wholeVolume").innerText =
-        volumes.Whole_Tumor_cm3 + " cm³";
-
-    document.getElementById("coreVolume").innerText =
-        volumes.Tumor_Core_cm3 + " cm³";
-
-    if (compositionChart) compositionChart.destroy();
-    if (volumeChart) volumeChart.destroy();
-
-    const ctx1 = document.getElementById("compositionChart")?.getContext("2d");
-    const ctx2 = document.getElementById("volumeChart")?.getContext("2d");
-
-    if (!ctx1 || !ctx2) return;
-
-    compositionChart = new Chart(ctx1, {
-        type: "doughnut",
-        data: {
-            labels: ["NET", "Edema", "ET"],
-            datasets: [{
-                data: [
-                    volumes.NET_percent,
-                    volumes.Edema_percent,
-                    volumes.ET_percent
-                ],
-                backgroundColor: ["#3b82f6", "#22c55e", "#facc15"]
-            }]
-        },
-        options: { responsive: true }
-    });
-
-    volumeChart = new Chart(ctx2, {
-        type: "bar",
-        data: {
-            labels: ["NET", "Edema", "ET"],
-            datasets: [{
-                label: "Volume (cm³)",
-                data: [
-                    volumes.NET_cm3,
-                    volumes.Edema_cm3,
-                    volumes.ET_cm3
-                ],
-                backgroundColor: ["#3b82f6", "#22c55e", "#facc15"]
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: { y: { beginAtZero: true } }
+async function loadDashboardData(patientId) {
+    try {
+        // First, try to get the latest results from your backend
+        const uploadId = currentCaseId || patientId;
+        
+        // Try to fetch from the results endpoint
+        const response = await fetch(`/results/${uploadId}/status`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Your data structure from pipeline.py includes volumetrics
+            if (data.volumetrics) {
+                updateDashboardWithVolumetrics(data.volumetrics);
+                return data;
+            }
         }
-    });
+        
+        // If no data from backend, return null (don't load sample)
+        console.log('No data available - dashboard remains empty');
+        return null;
+        
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        return null;
+    }
 }
 
 /* ==============================
-   3D VIEWER (Enhanced with Controls)
+   Dashboard Charts - Enhanced Version
+============================== */
+
+function updateDashboardWithVolumetrics(volumes) {
+    if (!volumes) return;
+
+    // Store volumes globally for 3D viewer hover
+    window.volumes = volumes;
+
+    // Update all KPI cards with your actual data
+    document.getElementById("wholeVolume").innerHTML = 
+        `<strong>${volumes.Whole_Tumor_cm3?.toFixed(2) || 0}</strong> <span style="font-size:0.9rem; color:#94a3b8;">cm³</span>`;
+    
+    document.getElementById("coreVolume").innerHTML = 
+        `<strong>${volumes.Tumor_Core_cm3?.toFixed(2) || 0}</strong> <span style="font-size:0.9rem; color:#94a3b8;">cm³</span>`;
+    
+    // Check if edemaVolume element exists
+    const edemaElement = document.getElementById("edemaVolume");
+    if (edemaElement) {
+        edemaElement.innerHTML = 
+            `<strong>${volumes.Edema_cm3?.toFixed(2) || 0}</strong> <span style="font-size:0.9rem; color:#94a3b8;">cm³</span>`;
+    }
+    
+    // Check if etVolume element exists
+    const etElement = document.getElementById("etVolume");
+    if (etElement) {
+        etElement.innerHTML = 
+            `<strong>${volumes.ET_cm3?.toFixed(2) || 0}</strong> <span style="font-size:0.9rem; color:#94a3b8;">cm³</span>`;
+    }
+
+    // Destroy existing charts if they exist
+    if (compositionChart) compositionChart.destroy();
+    if (volumeChart) volumeChart.destroy();
+
+    // Create Composition Chart (Donut) - Using percentages
+    const ctx1 = document.getElementById("compositionChart")?.getContext("2d");
+    if (ctx1) {
+        compositionChart = new Chart(ctx1, {
+            type: "doughnut",
+            data: {
+                labels: ["NET (Necrotic)", "Edema", "ET (Enhancing)"],
+                datasets: [{
+                    data: [
+                        volumes.NET_percent || 0,
+                        volumes.Edema_percent || 0,
+                        volumes.ET_percent || 0
+                    ],
+                    backgroundColor: ["#3b82f6", "#10b981", "#f59e0b"],
+                    borderColor: "#1f2937",
+                    borderWidth: 2,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { 
+                            color: '#e2e8f0',
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.raw.toFixed(2)}%`;
+                            }
+                        }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    // Create Volume Chart (Bar) - Using cm³ values
+    const ctx2 = document.getElementById("volumeChart")?.getContext("2d");
+    if (ctx2) {
+        volumeChart = new Chart(ctx2, {
+            type: "bar",
+            data: {
+                labels: ["NET", "Edema", "ET"],
+                datasets: [{
+                    label: "Volume (cm³)",
+                    data: [
+                        volumes.NET_cm3 || 0,
+                        volumes.Edema_cm3 || 0,
+                        volumes.ET_cm3 || 0
+                    ],
+                    backgroundColor: ["#3b82f6", "#10b981", "#f59e0b"],
+                    borderRadius: 6,
+                    barPercentage: 0.7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.raw.toFixed(2)} cm³`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#334155' },
+                        ticks: { 
+                            color: '#94a3b8',
+                            callback: function(value) {
+                                return value + ' cm³';
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: { color: '#e2e8f0' }
+                    }
+                }
+            }
+        });
+    }
+
+    // Update percentage display elements if they exist
+    const netPercent = document.getElementById("netPercent");
+    const edemaPercent = document.getElementById("edemaPercent");
+    const etPercent = document.getElementById("etPercent");
+    const totalVolume = document.getElementById("totalVolume");
+    const coreVolumeSmall = document.getElementById("coreVolumeSmall");
+
+    if (netPercent) netPercent.textContent = volumes.NET_percent?.toFixed(2) + '%' || '0%';
+    if (edemaPercent) edemaPercent.textContent = volumes.Edema_percent?.toFixed(2) + '%' || '0%';
+    if (etPercent) etPercent.textContent = volumes.ET_percent?.toFixed(2) + '%' || '0%';
+    if (totalVolume) totalVolume.textContent = volumes.Whole_Tumor_cm3?.toFixed(2) + ' cm³' || '0 cm³';
+    if (coreVolumeSmall) coreVolumeSmall.textContent = volumes.Tumor_Core_cm3?.toFixed(2) + ' cm³' || '0 cm³';
+
+    // Update 3D viewer volumes
+    update3DViewerVolumes(volumes);
+}
+
+function update3DViewerVolumes(volumes) {
+    // Update the hover info with actual volumes
+    const hoverInfoEl = document.querySelector('#hover-coordinates');
+    if (hoverInfoEl) {
+        hoverInfoEl.setAttribute('data-net-volume', volumes.NET_cm3);
+        hoverInfoEl.setAttribute('data-edema-volume', volumes.Edema_cm3);
+        hoverInfoEl.setAttribute('data-et-volume', volumes.ET_cm3);
+    }
+}
+
+/* ==============================
+   Create Brain Reference (Semi-transparent)
+============================== */
+
+function createBrainReference() {
+    // Create a semi-transparent brain-shaped reference
+    const brainGroup = new THREE.Group();
+    
+    // Material for brain - semi-transparent
+    const brainMat = new THREE.MeshPhongMaterial({
+        color: 0x88aaff,
+        transparent: true,
+        opacity: 0.15,
+        emissive: 0x112233,
+        wireframe: false,
+        side: THREE.DoubleSide,
+        depthWrite: false  // Prevents z-fighting with tumors
+    });
+    
+    // Material for brain stem - slightly different
+    const stemMat = new THREE.MeshPhongMaterial({
+        color: 0x7799cc,
+        transparent: true,
+        opacity: 0.12,
+        emissive: 0x112233,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+    
+    // Create two hemispheres (left and right)
+    const leftHemisphere = new THREE.Mesh(
+        new THREE.SphereGeometry(80, 64, 32),
+        brainMat
+    );
+    leftHemisphere.position.set(-30, 10, 0);
+    leftHemisphere.scale.set(1.0, 0.9, 0.8);
+    brainGroup.add(leftHemisphere);
+    
+    const rightHemisphere = new THREE.Mesh(
+        new THREE.SphereGeometry(80, 64, 32),
+        brainMat
+    );
+    rightHemisphere.position.set(30, 10, 0);
+    rightHemisphere.scale.set(1.0, 0.9, 0.8);
+    brainGroup.add(rightHemisphere);
+    
+    // Add cerebellum (back)
+    const cerebellum = new THREE.Mesh(
+        new THREE.SphereGeometry(50, 48, 24),
+        brainMat
+    );
+    cerebellum.position.set(0, -20, -50);
+    cerebellum.scale.set(1.2, 0.6, 0.8);
+    brainGroup.add(cerebellum);
+    
+    // Add brain stem
+    const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(20, 25, 70, 16),
+        stemMat
+    );
+    stem.position.set(0, -40, -20);
+    stem.rotation.x = 0.2;
+    stem.rotation.z = 0.1;
+    brainGroup.add(stem);
+    
+    // Add corpus callosum (connecting part)
+    const connector = new THREE.Mesh(
+        new THREE.TorusGeometry(30, 10, 16, 32, Math.PI),
+        brainMat
+    );
+    connector.position.set(0, 20, 10);
+    connector.rotation.y = Math.PI / 2;
+    connector.rotation.x = 0.2;
+    connector.scale.set(0.8, 0.6, 0.5);
+    brainGroup.add(connector);
+    
+    return brainGroup;
+}
+
+/* ==============================
+   3D VIEWER (Enhanced with Brain Reference)
 ============================== */
 
 function initViewer(caseId) {
@@ -239,14 +514,17 @@ function initViewer(caseId) {
     // Add hover info div
     hoverInfo = document.createElement('div');
     hoverInfo.style.position = 'absolute';
-    hoverInfo.style.background = 'rgba(0,0,0,0.8)';
-    hoverInfo.style.color = 'white';
-    hoverInfo.style.padding = '8px 12px';
-    hoverInfo.style.borderRadius = '4px';
+    hoverInfo.style.background = 'rgba(15, 23, 42, 0.95)';
+    hoverInfo.style.color = '#f8fafc';
+    hoverInfo.style.padding = '12px 16px';
+    hoverInfo.style.borderRadius = '8px';
     hoverInfo.style.fontSize = '14px';
     hoverInfo.style.pointerEvents = 'none';
     hoverInfo.style.display = 'none';
     hoverInfo.style.zIndex = '1000';
+    hoverInfo.style.border = '1px solid #3b82f6';
+    hoverInfo.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.5)';
+    hoverInfo.style.backdropFilter = 'blur(8px)';
     container.style.position = 'relative';
     container.appendChild(hoverInfo);
     
@@ -254,6 +532,7 @@ function initViewer(caseId) {
     netMesh = null;
     edemaMesh = null;
     etMesh = null;
+    brainReference = null;
 
     // Setup scene
     scene = new THREE.Scene();
@@ -270,28 +549,29 @@ function initViewer(caseId) {
     camera.lookAt(0, 0, 0);
 
     // Setup renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x0b1120);
     container.appendChild(renderer.domElement);
 
     // Setup OrbitControls
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.rotateSpeed = 1.0;
+    controls.rotateSpeed = 0.8;
     controls.zoomSpeed = 1.2;
     controls.panSpeed = 0.8;
     controls.maxDistance = 800;
-    controls.minDistance = 50;
+    controls.minDistance = 100;
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 1.0;
+    controls.autoRotateSpeed = 0.5;
     controls.enableZoom = true;
     controls.enablePan = true;
     controls.enableRotate = true;
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0x404060);
     scene.add(ambientLight);
 
     const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -302,10 +582,26 @@ function initViewer(caseId) {
     directionalLight2.position.set(-1, 0.5, -1);
     scene.add(directionalLight2);
 
+    // Add back light
+    const backLight = new THREE.DirectionalLight(0x8866aa, 0.4);
+    backLight.position.set(0, 0, -2);
+    scene.add(backLight);
+
+    // Add hemisphere light
+    const hemiLight = new THREE.HemisphereLight(0x445566, 0x221133, 0.6);
+    scene.add(hemiLight);
+
     // Add a subtle grid for reference
     const gridHelper = new THREE.GridHelper(500, 20, 0x3b82f6, 0x1e293b);
-    gridHelper.position.y = -50;
+    gridHelper.position.y = -60;
+    gridHelper.material.opacity = 0.15;
+    gridHelper.material.transparent = true;
     scene.add(gridHelper);
+
+    // Create and add semi-transparent brain reference
+    brainReference = createBrainReference();
+    scene.add(brainReference);
+    window.brainReference = brainReference;
 
     // Initialize loaders
     plyLoader = new THREE.PLYLoader();
@@ -356,7 +652,7 @@ function initViewer(caseId) {
     function loadMesh(region, colorHex, assignVar) {
         console.log(`Attempting to load ${region} mesh as PLY...`);
         
-        // Try PLY first (since your files are PLY format)
+        // Try PLY first
         plyLoader.load(
             `/mesh/${caseId}/${region}`,
             (geometry) => {
@@ -452,8 +748,6 @@ function initViewer(caseId) {
 
     // Helper function to calculate approximate volume from geometry
     function calculateVolume(geometry) {
-        // This is a simplified volume calculation
-        // For more accurate volume, you'd need to compute from the mesh
         if (!geometry.boundingBox) geometry.computeBoundingBox();
         const box = geometry.boundingBox;
         const size = new THREE.Vector3();
@@ -463,8 +757,8 @@ function initViewer(caseId) {
 
     // Load all three mesh types
     loadMesh("NET", 0x3b82f6, "net");     // Blue
-    loadMesh("Edema", 0x22c55e, "edema"); // Green
-    loadMesh("ET", 0xfacc15, "et");       // Yellow
+    loadMesh("Edema", 0x10b981, "edema"); // Green
+    loadMesh("ET", 0xf59e0b, "et");       // Yellow/Orange
 
     // Mouse move handler for hover effects
     function onMouseMove(event) {
@@ -480,46 +774,91 @@ function initViewer(caseId) {
 
         const intersects = raycaster.intersectObjects(meshes, true);
 
+        // Reset all materials
+        meshes.forEach(m => {
+            if (m && m.material) {
+                if (Array.isArray(m.material)) {
+                    m.material.forEach(mat => mat.emissive?.setHex(0x000000));
+                } else {
+                    m.material.emissive?.setHex(0x000000);
+                }
+            }
+        });
+
         if (intersects.length > 0) {
             const intersect = intersects[0];
             const mesh = intersect.object;
             const point = intersect.point;
             
-            // Show hover info
-            hoverInfo.style.display = 'block';
-            hoverInfo.style.left = (event.clientX - rect.left + 10) + 'px';
-            hoverInfo.style.top = (event.clientY - rect.top + 10) + 'px';
+            // Get mesh type and volume from your data
+            let regionName = 'Unknown';
+            let volume = 0;
+            let colorHex = '#ffffff';
+            let voxels = 0;
+            let mm3 = 0;
             
-            let regionName = mesh.userData?.type || 'Unknown';
-            let colorHex = mesh.userData?.color || 0xffffff;
-            let colorName = '';
-            
-            switch(regionName) {
-                case 'NET': colorName = 'Necrotic Core'; break;
-                case 'Edema': colorName = 'Edema'; break;
-                case 'ET': colorName = 'Enhancing Tumor'; break;
-                default: colorName = regionName;
+            if (mesh === netMesh || (mesh.parent === netMesh)) {
+                regionName = 'NET (Necrotic Core)';
+                colorHex = '#3b82f6';
+                volume = window.volumes?.NET_cm3 || 0;
+                voxels = window.volumes?.NET_voxels || 0;
+                mm3 = window.volumes?.NET_mm3 || 0;
+            } else if (mesh === edemaMesh || (mesh.parent === edemaMesh)) {
+                regionName = 'Edema';
+                colorHex = '#10b981';
+                volume = window.volumes?.Edema_cm3 || 0;
+                voxels = window.volumes?.Edema_voxels || 0;
+                mm3 = window.volumes?.Edema_mm3 || 0;
+            } else if (mesh === etMesh || (mesh.parent === etMesh)) {
+                regionName = 'ET (Enhancing Tumor)';
+                colorHex = '#f59e0b';
+                volume = window.volumes?.ET_cm3 || 0;
+                voxels = window.volumes?.ET_voxels || 0;
+                mm3 = window.volumes?.ET_mm3 || 0;
             }
             
+            // Show enhanced hover info with all your data
+            hoverInfo.style.display = 'block';
+            hoverInfo.style.left = (event.clientX - rect.left + 15) + 'px';
+            hoverInfo.style.top = (event.clientY - rect.top + 15) + 'px';
+            
             hoverInfo.innerHTML = `
-                <strong style="color: #${colorHex.toString(16).padStart(6, '0')}">${colorName}</strong><br>
-                Position: (${point.x.toFixed(1)}, ${point.y.toFixed(1)}, ${point.z.toFixed(1)})<br>
-                Volume: ${mesh.userData?.volume || 'N/A'} cm³
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                    <div style="width:16px; height:16px; background:${colorHex}; border-radius:4px;"></div>
+                    <strong style="color:${colorHex}; font-size:1.1rem;">${regionName}</strong>
+                </div>
+                <div style="display:grid; grid-template-columns:90px 1fr; gap:6px;">
+                    <span style="color:#94a3b8;">Position:</span>
+                    <span style="color:#f8fafc; font-family:monospace;">(${point.x.toFixed(1)}, ${point.y.toFixed(1)}, ${point.z.toFixed(1)})</span>
+                    
+                    <span style="color:#94a3b8;">Volume:</span>
+                    <span style="color:#f8fafc; font-weight:500;">${volume.toFixed(2)} cm³</span>
+                    
+                    <span style="color:#94a3b8;">Voxels:</span>
+                    <span style="color:#f8fafc;">${voxels.toLocaleString()}</span>
+                    
+                    <span style="color:#94a3b8;">Volume mm³:</span>
+                    <span style="color:#f8fafc;">${(mm3).toFixed(0)} mm³</span>
+                    
+                    ${window.volumes ? `
+                    <span style="color:#94a3b8;">% of Tumor:</span>
+                    <span style="color:#f8fafc;">${regionName === 'NET (Necrotic Core)' ? window.volumes.NET_percent : 
+                                                       regionName === 'Edema' ? window.volumes.Edema_percent : 
+                                                       window.volumes.ET_percent}%</span>
+                    ` : ''}
+                </div>
             `;
             
             // Highlight hovered mesh
-            meshes.forEach(m => {
-                if (m) m.material.emissive.setHex(0x000000);
-            });
             if (mesh.material) {
-                mesh.material.emissive.setHex(0x333333);
+                if (Array.isArray(mesh.material)) {
+                    mesh.material.forEach(mat => mat.emissive?.setHex(0x333333));
+                } else {
+                    mesh.material.emissive?.setHex(0x333333);
+                }
             }
         } else {
             hoverInfo.style.display = 'none';
-            // Reset highlights
-            meshes.forEach(m => {
-                if (m) m.material.emissive.setHex(0x000000);
-            });
         }
     }
 
@@ -556,30 +895,71 @@ function onWindowResize() {
 }
 
 /* ==============================
-   Opacity Controls
+   Opacity Controls (with Brain)
 ============================== */
 
 function setupOpacityControls() {
     const netSlider = document.getElementById("netOpacity");
     const edemaSlider = document.getElementById("edemaOpacity");
     const etSlider = document.getElementById("etOpacity");
+    const brainSlider = document.getElementById("brainOpacity");
 
     if (netSlider) {
         netSlider.addEventListener("input", (e) => {
-            if (netMesh) netMesh.material.opacity = parseFloat(e.target.value);
+            const val = parseFloat(e.target.value);
+            if (netMesh) {
+                if (Array.isArray(netMesh.material)) {
+                    netMesh.material.forEach(m => m.opacity = val);
+                } else {
+                    netMesh.material.opacity = val;
+                }
+            }
         });
     }
 
     if (edemaSlider) {
         edemaSlider.addEventListener("input", (e) => {
-            if (edemaMesh) edemaMesh.material.opacity = parseFloat(e.target.value);
+            const val = parseFloat(e.target.value);
+            if (edemaMesh) {
+                if (Array.isArray(edemaMesh.material)) {
+                    edemaMesh.material.forEach(m => m.opacity = val);
+                } else {
+                    edemaMesh.material.opacity = val;
+                }
+            }
         });
     }
 
     if (etSlider) {
         etSlider.addEventListener("input", (e) => {
-            if (etMesh) etMesh.material.opacity = parseFloat(e.target.value);
+            const val = parseFloat(e.target.value);
+            if (etMesh) {
+                if (Array.isArray(etMesh.material)) {
+                    etMesh.material.forEach(m => m.opacity = val);
+                } else {
+                    etMesh.material.opacity = val;
+                }
+            }
         });
+    }
+
+    // Brain opacity control
+    if (brainSlider) {
+        brainSlider.addEventListener("input", (e) => {
+            const val = parseFloat(e.target.value);
+            
+            // Update brain reference if it exists
+            if (window.brainReference) {
+                window.brainReference.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.opacity = val;
+                    }
+                });
+            }
+        });
+        
+        // Set initial value
+        brainSlider.value = 0.15;
     }
 }
 
@@ -597,5 +977,14 @@ document.querySelector('[data-tab="viewer"]')?.addEventListener("click", () => {
         alert("Please upload and segment an MRI first.");
     }
 });
+
+/* ==============================
+   Initialize - Clear Dashboard on Load
+============================== */
+
+// Clear dashboard on initial load (empty state)
+clearDashboard();
+
+console.log('CerebraScan AI - Dashboard ready (empty), upload MRI to begin');
 
 });
