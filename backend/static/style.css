@@ -1,0 +1,298 @@
+/* ===============================
+   CerebraScan AI — Premium UI
+================================ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background: radial-gradient(circle at 20% 20%, #111827, #0b1120 60%);
+    color: #e2e8f0;
+    overflow: hidden;
+}
+
+.app {
+    display: flex;
+    height: 100vh;
+}
+
+/* ===== Sidebar ===== */
+
+.sidebar {
+    width: 260px;
+    background: rgba(20, 30, 50, 0.9);
+    backdrop-filter: blur(10px);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar h2 {
+    font-weight: 600;
+    font-size: 1.3rem;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar ul {
+    list-style: none;
+}
+
+.sidebar li {
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #9ca3af;
+}
+
+.sidebar li:hover {
+    background: rgba(59,130,246,0.1);
+    color: white;
+}
+
+.sidebar li.active {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    color: white;
+    box-shadow: 0 0 15px rgba(59,130,246,0.4);
+}
+
+/* ===== Main Content ===== */
+
+.content {
+    flex: 1;
+    padding: 50px;
+    overflow-y: auto;
+}
+
+/* Panels */
+
+.panel {
+    display: none;
+    animation: fadeIn 0.25s ease;
+}
+
+.panel.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Headings */
+
+h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* Cards */
+
+.card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 25px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* Buttons */
+
+button {
+    padding: 12px 22px;
+    border-radius: 30px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 15px;
+}
+
+button.primary {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    color: white;
+}
+
+button.primary:hover {
+    box-shadow: 0 0 15px rgba(59,130,246,0.6);
+    transform: translateY(-2px);
+}
+
+button.secondary {
+    background: rgba(255,255,255,0.05);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+button.secondary:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Inputs */
+
+input[type="file"] {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: white;
+}
+
+/* Status Text */
+
+#uploadStatus,
+#segResult {
+    margin-top: 15px;
+    font-size: 0.95rem;
+    color: #93c5fd;
+}
+
+/* Prediction Results */
+
+strong {
+    color: #60a5fa;
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1f2937;
+    border-radius: 10px;
+}
+
+/* ===== Enhanced Layout ===== */
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 25px;
+}
+
+.card-icon {
+    font-size: 2rem;
+    color: #3b82f6;
+    margin-bottom: 10px;
+}
+
+.upload-card {
+    text-align: center;
+    padding: 40px;
+}
+
+.upload-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: #3b82f6;
+}
+
+.result-box {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+}
+
+.pred-grid {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.pred-box {
+    background: rgba(255,255,255,0.04);
+    padding: 20px;
+    border-radius: 14px;
+    text-align: center;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 30px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #9ca3af;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #22c55e;
+}
+
+/* ===== Progress Bar ===== */
+.progress-container {
+    width: 100%;
+    height: 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+#progressBar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #2563eb, #60a5fa);
+    transition: width 0.5s ease;
+}
+
+/* ===== Terminal ===== */
+#terminal {
+    margin-top: 20px;
+    height: 350px;
+    overflow-y: auto;
+    background: #0b1220;
+    border-radius: 14px;
+    padding: 15px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #22c55e;
+    border: 1px solid rgba(255,255,255,0.05);
+    white-space: pre-wrap;
+}
+
+.terminal-line {
+    margin-bottom: 6px;
+    animation: fadeIn 0.3s ease;
+}
+
+/* ===== Visualization ===== */
+#visualizationContainer {
+    margin-top: 25px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+#visualizationContainer img {
+    width: 220px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+}
