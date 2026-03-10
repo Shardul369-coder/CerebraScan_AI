@@ -125,7 +125,6 @@ For multi-session scans of the same patient, the system computes:<br>
 ## 🤖 Current Model Support <br>
 
 • **U-Net (Keras/TensorFlow)**<br>
-• **nnU-Net (PyTorch)**<br>
 
 ---
 
@@ -186,5 +185,6 @@ Git Remote (GitHub/GitLab)<br>
 ---
 
 ## 👤 Maintainer <br>
+
 
 This project is maintained by **Shardul Salodkar**.<br>
