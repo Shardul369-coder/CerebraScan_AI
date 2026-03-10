@@ -424,16 +424,27 @@
 
             <div class="card">
                 <div style="background:#1e293b; border-radius:12px; padding:25px; border-left:4px solid #3b82f6;">
-                    <p style="color:#94a3b8; line-height:1.6;">
+            
+                    <!-- <p style="color:#94a3b8; line-height:1.6;">
                         <i class="fas fa-robot" style="color:#3b82f6; margin-right:8px;"></i>
-                        Structured radiology report will appear here after segmentation and analysis.
-                    </p>
-                    <div style="margin-top:20px; padding:15px; background:#0f172a; border-radius:8px; color:#e2e8f0;">
-                        <strong>Findings:</strong> No segmentation data available. Please run segmentation first.
+                        AI-generated radiology report.
+                    </p> -->
+
+                <button id="generateReportBtn" class="primary" style="margin-bottom:15px;">
+                    <i class="fas fa-file-medical"></i> Generate Report
+                </button>
+
+                <div id="reportStatus" style="color:#94a3b8; margin-bottom:10px;"></div>
+
+                <div id="reportOutput" style="margin-top: 10px; padding: 15px; background: #0f172a; border-radius: 8px; color: #e2e8f0; min-height: 200px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #64748b; text-align: center;">
+                        <i class="fas fa-file-medical" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                            <p>No report generated yet. Click "Generate Report" to create an AI-powered clinical analysis.</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
     </main>
 </div>

@@ -12,7 +12,7 @@ export async function uploadFiles(formData) {
 }
 
 /* Radiogenomics (optional for now) */
-export async function runRadiogenomics(caseId) {
+export async function runRsadiogenomics(caseId) {
     const res = await fetch(`${API_BASE}/radiogenomics`, {
         method: "POST",
         headers: {
