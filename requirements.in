@@ -1,4 +1,6 @@
-# ---- CORE ----
+# =========================
+# CORE SYSTEM
+# =========================
 absl-py
 aiohttp
 aiohttp-retry
@@ -67,10 +69,29 @@ wrapt
 yarl
 zc.lockfile
 
-# ---- DVC ----
+# =========================
+# DVC
+# =========================
 dvc[s3]
 
-# ---- ML STACK ----
+# =========================
+# ML STACK
+# =========================
 numpy
-tensorflow==2.15.0  # because GPU container uses 2.15
-h5py
+tensorflow==2.15.0
+scipy
+pandas
+
+# =========================
+# MEDICAL / IMAGING
+# =========================
+nibabel
+pyvista
+vtk
+
+# =========================
+# FASTAPI BACKEND
+# =========================
+fastapi
+uvicorn
+python-multipart
