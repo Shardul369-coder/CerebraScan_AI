@@ -1,10 +1,10 @@
 import os
 import numpy as np
 from pathlib import Path
-from tqdm import tqdm
-from keras.models import load_model
-from src.losses import dice_coef_multiclass_no_bg,dice_coef_multiclass
 import tensorflow as tf
+from tqdm import tqdm
+from tensorflow.keras.models import load_model
+from src.losses import dice_coef_multiclass_no_bg,dice_coef_multiclass
 from src.config import IMG_SIZE, INPUT_CHANNELS
 
 def load_image_only(img_path):
