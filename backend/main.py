@@ -21,7 +21,6 @@ from backend.routes.visualization import router as visualization_router
 from backend.models.schemas import HealthResponse
 from backend.services.segmentation import is_model_available
 from backend.routes.mesh import router as mesh_router
-from backend.routes.report import router as report_router
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -91,7 +90,6 @@ app.include_router(upload_router)
 app.include_router(analyze_router)
 app.include_router(visualization_router)
 app.include_router(mesh_router)
-app.include_router(report_router)
 
 # ── Health & root ──────────────────────────────────────────────────────────────
 @app.get("/", include_in_schema=False)

@@ -141,7 +141,6 @@ uploadBtn?.addEventListener("click", async () => {
     try {
         const result = await uploadFiles(formData);
         currentCaseId = result.case_id;
-        window.currentCaseId = result.case_id;
         uploadStatus.innerText = `Upload successful: ${currentCaseId}`;
     } catch (error) {
         console.error("Upload error:", error);
@@ -988,111 +987,4 @@ clearDashboard();
 
 console.log('CerebraScan AI - Dashboard ready (empty), upload MRI to begin');
 
-/* ==============================
-   Clinical Report Generation
-============================== */
-
-(function setupReportButton() {
-    console.log('Setting up report button');
-
-    const reportBtn = document.getElementById("generateReportBtn");
-    const reportOutput = document.getElementById("reportOutput");
-    const reportStatus = document.getElementById("reportStatus");
-
-    console.log('Report button found:', !!reportBtn);
-    
-    if (reportBtn) {
-        // Simple direct click handler - no cloning
-        reportBtn.onclick = async function(event) {
-            event.preventDefault();
-            console.log('Report button clicked');
-            
-            // Access currentCaseId from the global scope
-            // If currentCaseId is declared with let/const in another closure, 
-            // we need to access it through window
-            const caseId = window.currentCaseId || currentCaseId;
-            console.log('Case ID:', caseId);
-            
-            if (!caseId) {
-                if (reportStatus) {
-                    reportStatus.innerHTML = '<span style="color: #f59e0b;">⚠ Please upload and segment an MRI first.</span>';
-                }
-                return;
-            }
-            
-            // Show loading
-            if (reportStatus) {
-                reportStatus.innerHTML = '<span style="color: #3b82f6;"><i class="fas fa-spinner fa-spin"></i> Generating report...</span>';
-            }
-            
-            if (reportOutput) {
-                reportOutput.innerHTML = `
-                    <div style="text-align: center; padding: 30px;">
-                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #3b82f6;"></i>
-                        <p style="color: #94a3b8; margin-top: 10px;">Generating clinical report...</p>
-                    </div>
-                `;
-            }
-            
-            try {
-                console.log('Fetching report...');
-                const response = await fetch(`/generate-report/${caseId}`);
-                
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}`);
-                }
-                
-                const data = await response.json();
-                console.log('Report received:', data);
-
-                if (data.status === 'error') {
-                    throw new Error(data.detail || 'Report generation failed on the server.');
-                }
-
-                // Get the report text
-                const reportText = data.report || 'No report content';
-                
-                // Simple display - just show the text with line breaks
-                if (reportOutput) {
-                    reportOutput.innerHTML = `
-                        <div style="background: #0f172a; border-radius: 12px; padding: 20px;">
-                            <div style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 15px;">
-                                <h3 style="color: #3b82f6; margin: 0;">
-                                    <i class="fas fa-file-medical"></i> Clinical Report
-                                </h3>
-                                <small style="color: #6b7280;">${new Date().toLocaleString()}</small>
-                            </div>
-                            <div style="color: #e2e8f0; line-height: 1.6; white-space: pre-wrap; font-family: monospace;">
-                                ${reportText.replace(/\n/g, '<br>')}
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                if (reportStatus) {
-                    reportStatus.innerHTML = '<span style="color: #10b981;">✅ Report generated</span>';
-                }
-                
-            } catch (error) {
-                console.error('Error:', error);
-                if (reportStatus) {
-                    reportStatus.innerHTML = `<span style="color: #ef4444;">❌ Error: ${error.message}</span>`;
-                }
-                if (reportOutput) {
-                    reportOutput.innerHTML = `
-                        <div style="color: #ef4444; padding: 20px; text-align: center;">
-                            <i class="fas fa-exclamation-circle"></i>
-                            <p>Failed to generate report</p>
-                            <small>${error.message}</small>
-                        </div>
-                    `;
-                }
-            }
-        };
-        
-        console.log('Report button handler attached');
-    } else {
-        console.error('Report button not found!');
-    }
-})();
 });
