@@ -1,6 +1,4 @@
-# =========================
-# CORE SYSTEM
-# =========================
+# ---- CORE ----
 absl-py
 aiohttp
 aiohttp-retry
@@ -69,29 +67,24 @@ wrapt
 yarl
 zc.lockfile
 
-# =========================
-# DVC
-# =========================
+# ---- DVC ----
 dvc[s3]
 
-# =========================
-# ML STACK
-# =========================
+# ---- ML STACK ----
 numpy
-tensorflow==2.15.0
-scipy
 pandas
+scipy
+tensorflow==2.15.0
+h5py
 
-# =========================
-# MEDICAL / IMAGING
-# =========================
+# ---- MEDICAL IMAGING ----
 nibabel
+
+# ---- 3D VISUALIZATION ----
 pyvista
 vtk
 
-# =========================
-# FASTAPI BACKEND
-# =========================
+# ---- API / DEPLOYMENT ----
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
